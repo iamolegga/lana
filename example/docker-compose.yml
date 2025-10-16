@@ -1,0 +1,59 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/compose-spec/compose-spec/master/schema/compose-spec.json
+
+services:
+  ingress:
+    container_name: traefik
+    image: traefik:v3.5.4
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./ingress/traefik:/etc/traefik:ro
+      - ./ingress/certs:/etc/certs:ro
+    depends_on:
+      - lana
+      - app
+    networks:
+      lana-network:
+        aliases:
+          - auth.lanaexample.dev
+
+  lana:
+    container_name: lana
+    build:
+      context: ../
+    restart: unless-stopped
+    volumes:
+      - ./lana:/etc/lana:ro
+    command: ["-config", "/etc/lana/config.yaml"]
+    env_file:
+      - ./.env
+    environment:
+      COOKIE_SECRET: abcdefghijklmnopqrstuvwxyz123456
+    expose:
+      - "8080"
+    networks:
+      - lana-network
+
+  app:
+    container_name: app
+    build:
+      context: ./app
+    restart: unless-stopped
+    volumes:
+      - ./ingress/certs:/etc/certs:ro
+    environment:
+      PARENT_HOSTNAME: lanaexample.dev
+      COOKIE_SECRET: abcdefghijklmnopqrstuvwxyz123456
+      APP_PORT: 8080
+      SSL_CERT_FILE: /etc/certs/rootCA.pem
+    expose:
+      - "8080"
+    networks:
+      - lana-network
+
+networks:
+  lana-network:
+    driver: bridge

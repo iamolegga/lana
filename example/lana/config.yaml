@@ -1,0 +1,26 @@
+cookie:
+  secret: $COOKIE_SECRET
+
+ratelimit:
+  x_forwarded_for_index: -1
+
+hosts:
+  auth.lanaexample.dev:
+    login_dir: /etc/lana/login/
+    # Allowed redirect URLs (supports wildcards)
+    # Examples:
+    #   - "https://myapp.com/callback" - exact match
+    #   - "https://*.myapp.com/*" - any subdomain of myapp.com
+    #   - "https://myapp.com/*" - any path on myapp.com
+    #   - "http://localhost:*/*" - localhost with any port (dev only)
+    allowed_redirect_urls:
+      - "https://*.lanaexample.dev/*"
+    jwt:
+      private_key_file: "/etc/lana/certs/private.pem"
+      kid: "auth-lanaexample-local"
+      audience: "https://auth.lanaexample.dev"
+      expiry: "1m"
+    providers:
+      google:
+        client_id: $GOOGLE_CLIENT_ID
+        client_secret: $GOOGLE_CLIENT_SECRET

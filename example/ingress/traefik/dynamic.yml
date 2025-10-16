@@ -1,0 +1,29 @@
+http:
+  routers:
+    traefik:
+      rule: "Host(`traefik.lanaexample.dev`)"
+      service: "api@internal"
+      tls: {}
+    app:
+      rule: "Host(`app.lanaexample.dev`)"
+      service: "app"
+      tls: {}
+    auth:
+      rule: "Host(`auth.lanaexample.dev`)"
+      service: "auth"
+      tls: {}
+
+  services:
+    app:
+      loadBalancer:
+        servers:
+          - url: "http://app:8080"
+    auth:
+      loadBalancer:
+        servers:
+          - url: "http://lana:8080"
+
+tls:
+  certificates:
+    - certFile: "/etc/certs/_wildcard.lanaexample.dev.pem"
+      keyFile: "/etc/certs/_wildcard.lanaexample.dev-key.pem"

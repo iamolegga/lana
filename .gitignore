@@ -30,3 +30,8 @@ go.work.sum
 # Editor/IDE
 # .idea/
 # .vscode/
+
+dev/
+tmp/
+.claude/settings.local.json
+**/*/certs/*.pem

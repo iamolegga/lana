@@ -1,0 +1,38 @@
+# Git files
+.git
+.gitignore
+
+# Development files
+.air.toml
+tmp/
+*.log
+
+# Documentation
+*.md
+
+# IDE files
+.vscode/
+.idea/
+
+# Test files (unless you want them in the image)
+*_test.go
+
+# Config files (should be mounted at runtime)
+config.yaml
+config.*.yaml
+
+# Keys and secrets (should be mounted at runtime)
+*.pem
+*.key
+dev/
+
+# Build artifacts
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# OS files
+.DS_Store
+Thumbs.db

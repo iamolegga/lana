@@ -1,0 +1,29 @@
+version: '3'
+
+tasks:
+  certs:web:
+    desc: Generate wildcard certificate for browser to trust using mkcert
+    dir: ingress/certs
+    cmds:
+      - mkcert "*.lanaexample.dev"
+      - cp "$(mkcert -CAROOT)/rootCA.pem" ./rootCA.pem
+
+  certs:jwt:
+    desc: Generate a new RSA private key for JWT signing
+    cmd: openssl genrsa -traditional -out ./lana/certs/private.pem 2048
+
+  hosts:on:
+    desc: Add hosts to /etc/hosts
+    cmd: sudo hostctl replace lana --from ./.etchosts
+
+  hosts:off:
+    desc: Remove hosts from /etc/hosts
+    cmd: sudo hostctl remove lana
+
+  up:
+    desc: Start example services with Docker Compose
+    cmd: docker-compose up -d
+
+  down:
+    desc: Stop example services with Docker Compose
+    cmd: docker-compose down

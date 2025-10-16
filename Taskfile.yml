@@ -1,0 +1,28 @@
+version: '3'
+
+tasks:
+  tidy:
+    desc: go mod tidy
+    cmd: go mod tidy
+  fmt:
+    desc: go fmt ./...
+    cmd: go fmt ./...
+  vet:
+    desc: go vet ./...
+    cmd: go vet ./...
+  test:
+    desc: go test ./... -v
+    cmd: go test ./... -v
+  air:
+    desc: air -c .air.toml
+    dotenv: [.env]
+    watch: true
+    sources: [.env]
+    cmd: air -c .air.toml
+
+  genKey:
+    desc: Generate a new RSA private key for development
+    cmd: openssl genrsa -traditional -out ./dev/private.pem 2048
+  genCookieSecret:
+    desc: Generate a new cookie secret
+    cmd: openssl rand 32 | openssl base64 -A | head -c 32
