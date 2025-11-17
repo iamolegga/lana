@@ -1,0 +1,41 @@
+name: Release Helm Charts
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'charts/**'
+
+jobs:
+  release:
+    # Grant GITHUB_TOKEN the permissions required to make a Pages deployment
+    permissions:
+      contents: write      # Required to create releases and push to gh-pages
+      packages: write      # Required if using OCI registry
+      pages: write         # Required for GitHub Pages
+      id-token: write      # Required for GitHub Pages
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
+        with:
+          fetch-depth: 0  # Required for chart-releaser to compare versions
+
+      - name: Configure Git
+        run: |
+          git config user.name "$GITHUB_ACTOR"
+          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+
+      - name: Install Helm
+        uses: azure/setup-helm@1a275c3b69536ee54be43f2070a358922e12c8d4
+        with:
+          version: v3.14.0
+
+      - name: Run chart-releaser
+        uses: helm/chart-releaser-action@cae68fefc6b5f367a0275617c9f83181ba54714f
+        env:
+          CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+        with:
+          charts_dir: charts
+          skip_existing: true

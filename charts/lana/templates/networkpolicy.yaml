@@ -1,0 +1,58 @@
+{{- if .Values.networkPolicy.enabled }}
+apiVersion: {{ include "lana.networkPolicy.apiVersion" . }}
+kind: NetworkPolicy
+metadata:
+  name: {{ include "lana.fullname" . }}
+  namespace: {{ .Release.Namespace | quote }}
+  labels: {{- include "lana.labels" . | nindent 4 }}
+  {{- with .Values.commonAnnotations }}
+  annotations: {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  podSelector:
+    matchLabels: {{- include "lana.selectorLabels" . | nindent 6 }}
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Allow inbound traffic to HTTP port
+    - ports:
+        - port: {{ .Values.service.ports.http }}
+          protocol: TCP
+      {{- if not .Values.networkPolicy.allowExternal }}
+      from:
+        - podSelector:
+            matchLabels: {{- include "lana.selectorLabels" . | nindent 14 }}
+        {{- if .Values.networkPolicy.ingressNSMatchLabels }}
+        - namespaceSelector:
+            matchLabels:
+              {{- range $key, $value := .Values.networkPolicy.ingressNSMatchLabels }}
+              {{ $key | quote }}: {{ $value | quote }}
+              {{- end }}
+          {{- if .Values.networkPolicy.ingressNSPodMatchLabels }}
+          podSelector:
+            matchLabels:
+              {{- range $key, $value := .Values.networkPolicy.ingressNSPodMatchLabels }}
+              {{ $key | quote }}: {{ $value | quote }}
+              {{- end }}
+          {{- end }}
+        {{- end }}
+      {{- end }}
+    {{- if .Values.networkPolicy.extraIngress }}
+    {{- toYaml .Values.networkPolicy.extraIngress | nindent 4 }}
+    {{- end }}
+  egress:
+    # Allow DNS resolution
+    - ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+    # Allow outbound HTTPS (for OAuth providers)
+    - ports:
+        - port: 443
+          protocol: TCP
+    {{- if .Values.networkPolicy.extraEgress }}
+    {{- toYaml .Values.networkPolicy.extraEgress | nindent 4 }}
+    {{- end }}
+{{- end }}

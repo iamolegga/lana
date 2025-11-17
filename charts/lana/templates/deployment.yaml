@@ -1,0 +1,173 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "lana.fullname" . }}
+  namespace: {{ .Release.Namespace | quote }}
+  labels: {{- include "lana.labels" . | nindent 4 }}
+  {{- with .Values.commonAnnotations }}
+  annotations: {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  {{- with .Values.updateStrategy }}
+  strategy: {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- if .Values.schedulerName }}
+  schedulerName: {{ .Values.schedulerName }}
+  {{- end }}
+  {{- if .Values.terminationGracePeriodSeconds }}
+  terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
+  {{- end }}
+  selector:
+    matchLabels: {{- include "lana.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels: {{- include "lana.selectorLabels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      annotations:
+        {{- include "lana.podAnnotations" . | nindent 8 }}
+    spec:
+      {{- include "lana.imagePullSecrets" . | nindent 6 }}
+      {{- if .Values.hostAliases }}
+      hostAliases: {{- toYaml .Values.hostAliases | nindent 8 }}
+      {{- end }}
+      {{- if .Values.podSecurityContext.enabled }}
+      securityContext: {{- omit .Values.podSecurityContext "enabled" | toYaml | nindent 8 }}
+      {{- end }}
+      {{- if .Values.topologySpreadConstraints }}
+      topologySpreadConstraints: {{- toYaml .Values.topologySpreadConstraints | nindent 8 }}
+      {{- end }}
+      {{- if .Values.priorityClassName }}
+      priorityClassName: {{ .Values.priorityClassName | quote }}
+      {{- end }}
+      {{- if .Values.runtimeClassName }}
+      runtimeClassName: {{ .Values.runtimeClassName | quote }}
+      {{- end }}
+      serviceAccountName: {{ include "lana.serviceAccountName" . }}
+      {{- if .Values.affinity }}
+      affinity: {{- toYaml .Values.affinity | nindent 8 }}
+      {{- else }}
+      affinity:
+        podAffinity: {{- include "lana.affinities.pods" (dict "type" .Values.podAffinityPreset "context" $) | nindent 10 }}
+        podAntiAffinity: {{- include "lana.affinities.pods" (dict "type" .Values.podAntiAffinityPreset "context" $) | nindent 10 }}
+        nodeAffinity: {{- include "lana.affinities.nodes" (dict "type" .Values.nodeAffinityPreset.type "key" .Values.nodeAffinityPreset.key "values" .Values.nodeAffinityPreset.values) | nindent 10 }}
+      {{- end }}
+      {{- if .Values.nodeSelector }}
+      nodeSelector: {{- toYaml .Values.nodeSelector | nindent 8 }}
+      {{- end }}
+      {{- if .Values.tolerations }}
+      tolerations: {{- toYaml .Values.tolerations | nindent 8 }}
+      {{- end }}
+      {{- if .Values.initContainers }}
+      initContainers: {{- toYaml .Values.initContainers | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: lana
+          image: {{ include "lana.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- if .Values.containerSecurityContext.enabled }}
+          securityContext: {{- omit .Values.containerSecurityContext "enabled" | toYaml | nindent 12 }}
+          {{- end }}
+          {{- if .Values.command }}
+          command: {{- toYaml .Values.command | nindent 12 }}
+          {{- end }}
+          {{- if .Values.args }}
+          args: {{- toYaml .Values.args | nindent 12 }}
+          {{- else }}
+          args:
+            - -config
+            - /etc/lana/config.yaml
+          {{- end }}
+          {{- if .Values.extraEnvVars }}
+          env:
+            {{- toYaml .Values.extraEnvVars | nindent 12 }}
+          {{- end }}
+          {{- if or .Values.existingSecret.name .Values.secrets .Values.extraEnvVarsCM .Values.extraEnvVarsSecret }}
+          envFrom:
+            {{- if .Values.existingSecret.name }}
+            - secretRef:
+                name: {{ .Values.existingSecret.name }}
+            {{- end }}
+            {{- if and (not .Values.existingSecret.name) .Values.secrets }}
+            - secretRef:
+                name: {{ include "lana.fullname" . }}
+            {{- end }}
+            {{- if .Values.extraEnvVarsCM }}
+            - configMapRef:
+                name: {{ .Values.extraEnvVarsCM }}
+            {{- end }}
+            {{- if .Values.extraEnvVarsSecret }}
+            - secretRef:
+                name: {{ .Values.extraEnvVarsSecret }}
+            {{- end }}
+          {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.ports.http }}
+              protocol: TCP
+          {{- if .Values.livenessProbe.enabled }}
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: {{ .Values.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.livenessProbe.timeoutSeconds }}
+            successThreshold: {{ .Values.livenessProbe.successThreshold }}
+            failureThreshold: {{ .Values.livenessProbe.failureThreshold }}
+          {{- else if .Values.customLivenessProbe }}
+          livenessProbe: {{- toYaml .Values.customLivenessProbe | nindent 12 }}
+          {{- end }}
+          {{- if .Values.readinessProbe.enabled }}
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: {{ .Values.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.readinessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.readinessProbe.timeoutSeconds }}
+            successThreshold: {{ .Values.readinessProbe.successThreshold }}
+            failureThreshold: {{ .Values.readinessProbe.failureThreshold }}
+          {{- else if .Values.customReadinessProbe }}
+          readinessProbe: {{- toYaml .Values.customReadinessProbe | nindent 12 }}
+          {{- end }}
+          {{- if .Values.startupProbe.enabled }}
+          startupProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: {{ .Values.startupProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.startupProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.startupProbe.timeoutSeconds }}
+            successThreshold: {{ .Values.startupProbe.successThreshold }}
+            failureThreshold: {{ .Values.startupProbe.failureThreshold }}
+          {{- else if .Values.customStartupProbe }}
+          startupProbe: {{- toYaml .Values.customStartupProbe | nindent 12 }}
+          {{- end }}
+          {{- if .Values.resources }}
+          resources: {{- toYaml .Values.resources | nindent 12 }}
+          {{- end }}
+          {{- if .Values.lifecycleHooks }}
+          lifecycle: {{- toYaml .Values.lifecycleHooks | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            - name: config
+              mountPath: /etc/lana
+              readOnly: true
+            {{- if .Values.extraVolumeMounts }}
+            {{- toYaml .Values.extraVolumeMounts | nindent 12 }}
+            {{- end }}
+        {{- if .Values.sidecars }}
+        {{- toYaml .Values.sidecars | nindent 8 }}
+        {{- end }}
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "lana.configMapName" . }}
+        {{- if .Values.extraVolumes }}
+        {{- toYaml .Values.extraVolumes | nindent 8 }}
+        {{- end }}

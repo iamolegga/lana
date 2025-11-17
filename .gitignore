@@ -35,3 +35,4 @@ dev/
 tmp/
 .claude/settings.local.json
 **/*/certs/*.pem
+.vscode/settings.json

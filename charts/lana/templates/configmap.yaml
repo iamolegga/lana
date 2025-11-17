@@ -1,0 +1,14 @@
+{{- if include "lana.createConfigMap" . }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "lana.fullname" . }}
+  namespace: {{ .Release.Namespace | quote }}
+  labels: {{- include "lana.labels" . | nindent 4 }}
+  {{- with .Values.commonAnnotations }}
+  annotations: {{- toYaml . | nindent 4 }}
+  {{- end }}
+data:
+  config.yaml: |
+{{- .Values.config | toYaml | nindent 4 }}
+{{- end }}

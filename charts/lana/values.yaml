@@ -1,0 +1,698 @@
+## @section Global parameters
+## Global Docker image parameters
+## Please, note that this will override the image parameters, including dependencies, configured to use the global value
+## Current available global Docker image parameters: imageRegistry, imagePullSecrets and storageClass
+
+## @param global.imageRegistry Global Docker image registry
+## @param global.imagePullSecrets Global Docker registry secret names as an array
+## @param global.storageClass Global StorageClass for Persistent Volume(s)
+##
+global:
+  imageRegistry: ""
+  ## E.g.
+  ## imagePullSecrets:
+  ##   - myRegistryKeySecretName
+  ##
+  imagePullSecrets: []
+  storageClass: ""
+
+## @section Common parameters
+
+## @param kubeVersion Override Kubernetes version
+##
+kubeVersion: ""
+
+## @param nameOverride String to partially override common.names.fullname
+##
+nameOverride: ""
+
+## @param fullnameOverride String to fully override common.names.fullname
+##
+fullnameOverride: ""
+
+## @param commonLabels Labels to add to all deployed objects
+##
+commonLabels: {}
+
+## @param commonAnnotations Annotations to add to all deployed objects
+##
+commonAnnotations: {}
+
+## @param clusterDomain Kubernetes cluster domain name
+##
+clusterDomain: cluster.local
+
+## @param extraDeploy Array of extra objects to deploy with the release
+##
+extraDeploy: []
+
+## @section Lana Image parameters
+
+## Lana image
+## @param image.registry Lana image registry
+## @param image.repository Lana image repository
+## @param image.tag Lana image tag (immutable tags are recommended)
+## @param image.digest Lana image digest in the way sha256:aa.... Please note this parameter, if set, will override the tag
+## @param image.pullPolicy Lana image pull policy
+## @param image.pullSecrets Lana image pull secrets
+## @param image.debug Enable debug mode
+##
+image:
+  registry: ghcr.io
+  repository: iamolegga/lana
+  tag: v0.1.0
+  digest: ""
+  ## Specify a imagePullPolicy
+  ## Defaults to 'Always' if image tag is 'latest', else set to 'IfNotPresent'
+  ## ref: https://kubernetes.io/docs/concepts/containers/images/#pre-pulled-images
+  ##
+  pullPolicy: IfNotPresent
+  ## Optionally specify an array of imagePullSecrets.
+  ## Secrets must be manually created in the namespace.
+  ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
+  ## e.g:
+  ## pullSecrets:
+  ##   - myRegistryKeySecretName
+  ##
+  pullSecrets: []
+  ## Enable debug mode
+  ##
+  debug: false
+
+## @section Lana deployment parameters
+
+## @param replicaCount Number of Lana replicas to deploy
+##
+replicaCount: 1
+
+## @param updateStrategy.type Lana deployment strategy type
+## ref: https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#strategy
+## e.g:
+## updateStrategy:
+##  type: RollingUpdate
+##  rollingUpdate:
+##    maxSurge: 25%
+##    maxUnavailable: 25%
+##
+updateStrategy:
+  type: RollingUpdate
+
+## @param schedulerName Alternate scheduler
+## ref: https://kubernetes.io/docs/tasks/administer-cluster/configure-multiple-schedulers/
+##
+schedulerName: ""
+
+## @param terminationGracePeriodSeconds Seconds Lana pod needs to terminate gracefully
+## ref: https://kubernetes.io/docs/concepts/workloads/pods/pod/#termination-of-pods
+##
+terminationGracePeriodSeconds: ""
+
+## @param topologySpreadConstraints Topology Spread Constraints for pod assignment spread across your cluster among failure-domains
+## Ref: https://kubernetes.io/docs/concepts/workloads/pods/pod-topology-spread-constraints/#spread-constraints-for-pods
+##
+topologySpreadConstraints: []
+
+## @param priorityClassName Lana pods' priorityClassName
+##
+priorityClassName: ""
+
+## @param runtimeClassName Name of the runtime class to be used by pod(s)
+## ref: https://kubernetes.io/docs/concepts/containers/runtime-class/
+##
+runtimeClassName: ""
+
+## @param hostAliases Lana pods host aliases
+## https://kubernetes.io/docs/concepts/services-networking/add-entries-to-pod-etc-hosts-with-host-aliases/
+##
+hostAliases: []
+
+## @param extraVolumes Optionally specify extra list of additional volumes for the Lana pod(s)
+##
+extraVolumes: []
+
+## @param extraVolumeMounts Optionally specify extra list of additional volumeMounts for the Lana container(s)
+##
+extraVolumeMounts: []
+
+## @param sidecars Add additional sidecar containers to the Lana pod(s)
+## e.g:
+## sidecars:
+##   - name: your-image-name
+##     image: your-image
+##     imagePullPolicy: Always
+##     ports:
+##       - name: portname
+##         containerPort: 1234
+##
+sidecars: []
+
+## @param initContainers Add additional init containers to the Lana pod(s)
+## ref: https://kubernetes.io/docs/concepts/workloads/pods/init-containers/
+## e.g:
+## initContainers:
+##  - name: your-image-name
+##    image: your-image
+##    imagePullPolicy: Always
+##    command: ['sh', '-c', 'echo "hello from init"']
+##
+initContainers: []
+
+## @param podLabels Extra labels for Lana pods
+## ref: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
+##
+podLabels: {}
+
+## @param podAnnotations Annotations for Lana pods
+## ref: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/
+##
+podAnnotations: {}
+
+## @param podAffinityPreset Pod affinity preset. Ignored if `affinity` is set. Allowed values: `soft` or `hard`
+## ref: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#inter-pod-affinity-and-anti-affinity
+##
+podAffinityPreset: ""
+
+## @param podAntiAffinityPreset Pod anti-affinity preset. Ignored if `affinity` is set. Allowed values: `soft` or `hard`
+## ref: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#inter-pod-affinity-and-anti-affinity
+##
+podAntiAffinityPreset: soft
+
+## Node affinity preset
+## ref: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#node-affinity
+##
+nodeAffinityPreset:
+  ## @param nodeAffinityPreset.type Node affinity preset type. Ignored if `affinity` is set. Allowed values: `soft` or `hard`
+  ##
+  type: ""
+  ## @param nodeAffinityPreset.key Node label key to match. Ignored if `affinity` is set
+  ##
+  key: ""
+  ## @param nodeAffinityPreset.values Node label values to match. Ignored if `affinity` is set
+  ## E.g.
+  ## values:
+  ##   - e2e-az1
+  ##   - e2e-az2
+  ##
+  values: []
+
+## @param affinity Affinity for Lana pods assignment
+## ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#affinity-and-anti-affinity
+## NOTE: `podAffinityPreset`, `podAntiAffinityPreset`, and `nodeAffinityPreset` will be ignored when it's set
+##
+affinity: {}
+
+## @param nodeSelector Node labels for Lana pods assignment
+## ref: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/
+##
+nodeSelector: {}
+
+## @param tolerations Tolerations for Lana pods assignment
+## ref: https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/
+##
+tolerations: []
+
+## Lana containers' resource requests and limits
+## ref: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/
+## @param resources.limits The resources limits for the Lana containers
+## @param resources.requests The requested resources for the Lana containers
+##
+resources:
+  limits: {}
+  requests: {}
+
+## Configure Pods Security Context
+## ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-pod
+## @param podSecurityContext.enabled Enabled Lana pods' Security Context
+## @param podSecurityContext.fsGroup Set Lana pod's Security Context fsGroup
+## @param podSecurityContext.fsGroupChangePolicy Set filesystem group change policy
+## @param podSecurityContext.sysctls Set kernel settings using the sysctl interface
+## @param podSecurityContext.supplementalGroups Set filesystem extra groups
+##
+podSecurityContext:
+  enabled: true
+  fsGroup: 1001
+  fsGroupChangePolicy: Always
+  sysctls: []
+  supplementalGroups: []
+
+## Configure Container Security Context
+## ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-pod
+## @param containerSecurityContext.enabled Enabled Lana containers' Security Context
+## @param containerSecurityContext.runAsUser Set Lana containers' Security Context runAsUser
+## @param containerSecurityContext.runAsNonRoot Set Lana containers' Security Context runAsNonRoot
+## @param containerSecurityContext.privileged Set Lana containers' Security Context privileged
+## @param containerSecurityContext.readOnlyRootFilesystem Set Lana containers' Security Context runAsNonRoot
+## @param containerSecurityContext.allowPrivilegeEscalation Set Lana containers' Security Context allowPrivilegeEscalation
+## @param containerSecurityContext.capabilities.drop List of capabilities to be dropped
+## @param containerSecurityContext.seccompProfile.type Set container's Security Context seccomp profile
+##
+containerSecurityContext:
+  enabled: true
+  runAsUser: 1001
+  runAsNonRoot: true
+  privileged: false
+  readOnlyRootFilesystem: false
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop: ["ALL"]
+  seccompProfile:
+    type: "RuntimeDefault"
+
+## @param command Override default container command (useful when using custom images)
+##
+command: []
+
+## @param args Override default container args (useful when using custom images)
+##
+args: []
+
+## @param extraEnvVars Array with extra environment variables to add to Lana nodes
+## e.g:
+## extraEnvVars:
+##   - name: FOO
+##     value: "bar"
+##
+extraEnvVars: []
+
+## @param extraEnvVarsCM Name of existing ConfigMap containing extra env vars for Lana nodes
+##
+extraEnvVarsCM: ""
+
+## @param extraEnvVarsSecret Name of existing Secret containing extra env vars for Lana nodes
+##
+extraEnvVarsSecret: ""
+
+## @section Traffic Exposure Parameters
+
+## Lana service parameters
+##
+service:
+  ## @param service.type Lana service type
+  ##
+  type: ClusterIP
+  ## @param service.ports.http Lana service HTTP port
+  ##
+  ports:
+    http: 8080
+  ## Node ports to expose
+  ## @param service.nodePorts.http Node port for HTTP
+  ## NOTE: choose port between <30000-32767>
+  ##
+  nodePorts:
+    http: ""
+  ## @param service.clusterIP Lana service Cluster IP
+  ## e.g.:
+  ## clusterIP: None
+  ##
+  clusterIP: ""
+  ## @param service.loadBalancerIP Lana service Load Balancer IP
+  ## ref: https://kubernetes.io/docs/concepts/services-networking/service/#type-loadbalancer
+  ##
+  loadBalancerIP: ""
+  ## @param service.loadBalancerSourceRanges Lana service Load Balancer sources
+  ## ref: https://kubernetes.io/docs/tasks/access-application-cluster/configure-cloud-provider-firewall/#restrict-access-for-loadbalancer-service
+  ## e.g:
+  ## loadBalancerSourceRanges:
+  ##   - 10.10.10.0/24
+  ##
+  loadBalancerSourceRanges: []
+  ## @param service.externalTrafficPolicy Lana service external traffic policy
+  ## ref https://kubernetes.io/docs/tasks/access-application-cluster/create-external-load-balancer/#preserving-the-client-source-ip
+  ##
+  externalTrafficPolicy: Cluster
+  ## @param service.annotations Additional custom annotations for Lana service
+  ##
+  annotations: {}
+  ## @param service.extraPorts Extra ports to expose in Lana service (normally used with the `sidecars` value)
+  ##
+  extraPorts: []
+  ## @param service.sessionAffinity Control where client requests go, to the same pod or round-robin
+  ## Values: ClientIP or None
+  ## ref: https://kubernetes.io/docs/concepts/services-networking/service/
+  ##
+  sessionAffinity: None
+  ## @param service.sessionAffinityConfig Additional settings for the sessionAffinity
+  ## sessionAffinityConfig:
+  ##   clientIP:
+  ##     timeoutSeconds: 300
+  ##
+  sessionAffinityConfig: {}
+
+## Configure the ingress resource that allows you to access the Lana installation
+## ref: https://kubernetes.io/docs/concepts/services-networking/ingress/
+##
+ingress:
+  ## @param ingress.enabled Enable ingress record generation for Lana
+  ##
+  enabled: false
+  ## @param ingress.pathType Ingress path type
+  ##
+  pathType: ImplementationSpecific
+  ## @param ingress.apiVersion Force Ingress API version (automatically detected if not set)
+  ##
+  apiVersion: ""
+  ## @param ingress.hostname Default host for the ingress record
+  ##
+  hostname: lana.local
+  ## @param ingress.ingressClassName IngressClass that will be be used to implement the Ingress (Kubernetes 1.18+)
+  ## This is supported in Kubernetes 1.18+ and required if you have more than one IngressClass marked as the default for your cluster .
+  ## ref: https://kubernetes.io/blog/2020/04/02/improvements-to-the-ingress-api-in-kubernetes-1.18/
+  ##
+  ingressClassName: ""
+  ## @param ingress.path Default path for the ingress record
+  ## NOTE: You may need to set this to '/*' in order to use this with ALB ingress controllers
+  ##
+  path: /
+  ## @param ingress.annotations Additional annotations for the Ingress resource. To enable certificate autogeneration, place here your cert-manager annotations.
+  ## Use this parameter to set the required annotations for cert-manager, see
+  ## ref: https://cert-manager.io/docs/usage/ingress/#supported-annotations
+  ## e.g:
+  ## annotations:
+  ##   kubernetes.io/ingress.class: nginx
+  ##   cert-manager.io/cluster-issuer: cluster-issuer-name
+  ##
+  annotations: {}
+  ## @param ingress.tls Enable TLS configuration for the host defined at `ingress.hostname` parameter
+  ## TLS certificates will be retrieved from a TLS secret with name: `{{- printf "%s-tls" .Values.ingress.hostname }}`
+  ## You can:
+  ##   - Use the `ingress.secrets` parameter to create this TLS secret
+  ##   - Rely on cert-manager to create it by setting the corresponding annotations
+  ##   - Rely on Helm to create self-signed certificates by setting `ingress.selfSigned=true`
+  ##
+  tls: false
+  ## @param ingress.selfSigned Create a TLS secret for this ingress record using self-signed certificates generated by Helm
+  ##
+  selfSigned: false
+  ## @param ingress.extraHosts An array with additional hostname(s) to be covered with the ingress record
+  ## e.g:
+  ## extraHosts:
+  ##   - name: lana.local
+  ##     path: /
+  ##
+  extraHosts: []
+  ## @param ingress.extraPaths An array with additional arbitrary paths that may need to be added to the ingress under the main host
+  ## e.g:
+  ## extraPaths:
+  ## - path: /*
+  ##   backend:
+  ##     serviceName: ssl-redirect
+  ##     servicePort: use-annotation
+  ##
+  extraPaths: []
+  ## @param ingress.extraTls TLS configuration for additional hostname(s) to be covered with this ingress record
+  ## ref: https://kubernetes.io/docs/concepts/services-networking/ingress/#tls
+  ## e.g:
+  ## extraTls:
+  ## - hosts:
+  ##     - lana.local
+  ##   secretName: lana.local-tls
+  ##
+  extraTls: []
+  ## @param ingress.secrets Custom TLS certificates as secrets
+  ## NOTE: 'key' and 'certificate' are expected in PEM format
+  ## NOTE: 'name' should line up with a 'secretName' set further up
+  ## If it is not set and you're using cert-manager, this is unneeded, as it will create a secret for you with valid certificates
+  ## If it is not set and you're NOT using cert-manager either, self-signed certificates will be created valid for 365 days
+  ## It is also possible to create and manage the certificates outside of this helm chart
+  ## Please see README.md for more information
+  ## e.g:
+  ## secrets:
+  ##   - name: lana.local-tls
+  ##     key: |-
+  ##       -----BEGIN RSA PRIVATE KEY-----
+  ##       ...
+  ##       -----END RSA PRIVATE KEY-----
+  ##     certificate: |-
+  ##       -----BEGIN CERTIFICATE-----
+  ##       ...
+  ##       -----END CERTIFICATE-----
+  ##
+  secrets: []
+  ## @param ingress.extraRules Additional rules to be covered with this ingress record
+  ## ref: https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-rules
+  ## e.g:
+  ## extraRules:
+  ## - host: example.local
+  ##     http:
+  ##       path: /
+  ##       backend:
+  ##         service:
+  ##           name: example-svc
+  ##           port:
+  ##             name: http
+  ##
+  extraRules: []
+
+## @section Lana Application Parameters
+
+## Lana configuration
+## Provide the Lana config.yaml structure directly as YAML
+## Environment variables (like $COOKIE_SECRET) will be substituted by Lana at runtime
+## @param config Lana configuration as structured YAML (matches config.yaml format)
+##
+config: {}
+  # Example:
+  # cookie:
+  #   secret: $COOKIE_SECRET
+  # ratelimit:
+  #   requests_per_minute: 100
+  #   x_forwarded_for_index: -1
+  #   cleanup_interval: "5m"
+  # logging:
+  #   level: info
+  #   format: json
+  # hosts:
+  #   auth.example.com:
+  #     login_dir: /mnt/lana/login/
+  #     allowed_redirect_urls:
+  #       - "https://*.example.com/*"
+  #     jwt:
+  #       private_key_file: /mnt/lana/certs/private.pem
+  #       kid: "auth-example-prod"
+  #       audience: "https://auth.example.com"
+  #       expiry: "24h"
+  #     providers:
+  #       google:
+  #         client_id: $GOOGLE_CLIENT_ID
+  #         client_secret: $GOOGLE_CLIENT_SECRET
+
+## Existing ConfigMap with Lana configuration
+## Use this to reference a pre-created ConfigMap instead of generating one from `config`
+## @param existingConfig.name Name of existing ConfigMap containing config.yaml
+## @param existingConfig.namespace Namespace of existing ConfigMap (defaults to release namespace)
+##
+existingConfig:
+  name: ""
+  namespace: ""
+
+## Lana secrets as environment variables
+## Provide any environment variables your config needs (plain text, auto-encoded to base64)
+## This is completely free-form - define whatever env vars your config references
+## @param secrets Environment variables for Lana (plain text, auto-base64 encoded)
+##
+secrets: {}
+  # Example for single host:
+  # COOKIE_SECRET: "my-secret-32-chars-minimum-length"
+  # GOOGLE_CLIENT_ID: "xxx.apps.googleusercontent.com"
+  # GOOGLE_CLIENT_SECRET: "GOCSPX-xxx"
+  # FACEBOOK_CLIENT_ID: "123456789"
+  # FACEBOOK_CLIENT_SECRET: "xxx"
+  #
+  # Example for multi-host with different providers:
+  # COOKIE_SECRET: "xxx"
+  # GOOGLE_CLIENT_ID_PROD: "xxx.apps.googleusercontent.com"
+  # GOOGLE_CLIENT_SECRET_PROD: "GOCSPX-xxx"
+  # GOOGLE_CLIENT_ID_STAGING: "yyy.apps.googleusercontent.com"
+  # GOOGLE_CLIENT_SECRET_STAGING: "GOCSPX-yyy"
+  # CUSTOM_API_KEY: "any-other-env-var-you-need"
+
+## Existing Secret with environment variables
+## Use this to reference a pre-created Secret instead of generating one from `secrets`
+## Can be combined with inline `secrets` - values will be merged
+## @param existingSecret.name Name of existing Secret containing environment variables
+## @param existingSecret.namespace Namespace of existing Secret (defaults to release namespace)
+##
+existingSecret:
+  name: ""
+  namespace: ""
+
+## @section RBAC Parameters
+
+## ServiceAccount configuration
+##
+serviceAccount:
+  ## @param serviceAccount.create Specifies whether a ServiceAccount should be created
+  ##
+  create: true
+  ## @param serviceAccount.name The name of the ServiceAccount to use.
+  ## If not set and create is true, a name is generated using the common.names.fullname template
+  ##
+  name: ""
+  ## @param serviceAccount.annotations Additional Service Account annotations (evaluated as a template)
+  ##
+  annotations: {}
+  ## @param serviceAccount.automountServiceAccountToken Automount service account token for the server service account
+  ##
+  automountServiceAccountToken: true
+
+## @section Other Parameters
+
+## Lana autoscaling configuration
+## @param autoscaling.enabled Enable Horizontal POD autoscaling for Lana
+## @param autoscaling.minReplicas Minimum number of Lana replicas
+## @param autoscaling.maxReplicas Maximum number of Lana replicas
+## @param autoscaling.targetCPU Target CPU utilization percentage
+## @param autoscaling.targetMemory Target Memory utilization percentage
+##
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 11
+  targetCPU: 50
+  targetMemory: 50
+
+## @param livenessProbe.enabled Enable livenessProbe on Lana containers
+## @param livenessProbe.initialDelaySeconds Initial delay seconds for livenessProbe
+## @param livenessProbe.periodSeconds Period seconds for livenessProbe
+## @param livenessProbe.timeoutSeconds Timeout seconds for livenessProbe
+## @param livenessProbe.failureThreshold Failure threshold for livenessProbe
+## @param livenessProbe.successThreshold Success threshold for livenessProbe
+##
+livenessProbe:
+  enabled: true
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+  successThreshold: 1
+
+## @param readinessProbe.enabled Enable readinessProbe on Lana containers
+## @param readinessProbe.initialDelaySeconds Initial delay seconds for readinessProbe
+## @param readinessProbe.periodSeconds Period seconds for readinessProbe
+## @param readinessProbe.timeoutSeconds Timeout seconds for readinessProbe
+## @param readinessProbe.failureThreshold Failure threshold for readinessProbe
+## @param readinessProbe.successThreshold Success threshold for readinessProbe
+##
+readinessProbe:
+  enabled: true
+  initialDelaySeconds: 5
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+  successThreshold: 1
+
+## @param startupProbe.enabled Enable startupProbe on Lana containers
+## @param startupProbe.initialDelaySeconds Initial delay seconds for startupProbe
+## @param startupProbe.periodSeconds Period seconds for startupProbe
+## @param startupProbe.timeoutSeconds Timeout seconds for startupProbe
+## @param startupProbe.failureThreshold Failure threshold for startupProbe
+## @param startupProbe.successThreshold Success threshold for startupProbe
+##
+startupProbe:
+  enabled: false
+  initialDelaySeconds: 0
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 30
+  successThreshold: 1
+
+## @param customLivenessProbe Custom livenessProbe that overrides the default one
+##
+customLivenessProbe: {}
+
+## @param customReadinessProbe Custom readinessProbe that overrides the default one
+##
+customReadinessProbe: {}
+
+## @param customStartupProbe Custom startupProbe that overrides the default one
+##
+customStartupProbe: {}
+
+## @param lifecycleHooks for the Lana container(s) to automate configuration before or after startup
+##
+lifecycleHooks: {}
+
+## ServiceMonitor configuration for Prometheus Operator
+##
+serviceMonitor:
+  ## @param serviceMonitor.enabled Create ServiceMonitor resource for scraping metrics using PrometheusOperator
+  ##
+  enabled: false
+  ## @param serviceMonitor.namespace Namespace which Prometheus is running in
+  ##
+  namespace: ""
+  ## @param serviceMonitor.interval Interval at which metrics should be scraped
+  ## ref: https://github.com/coreos/prometheus-operator/blob/master/Documentation/api.md#endpoint
+  ##
+  interval: 30s
+  ## @param serviceMonitor.scrapeTimeout Timeout after which the scrape is ended
+  ## ref: https://github.com/coreos/prometheus-operator/blob/master/Documentation/api.md#endpoint
+  ##
+  scrapeTimeout: 10s
+  ## @param serviceMonitor.labels Additional labels that can be used so ServiceMonitor will be discovered by Prometheus
+  ##
+  labels: {}
+  ## @param serviceMonitor.selector Prometheus instance selector labels
+  ## ref: https://github.com/bitnami/charts/tree/main/bitnami/prometheus-operator#prometheus-configuration
+  ##
+  selector: {}
+  ## @param serviceMonitor.relabelings RelabelConfigs to apply to samples before scraping
+  ##
+  relabelings: []
+  ## @param serviceMonitor.metricRelabelings MetricRelabelConfigs to apply to samples before ingestion
+  ##
+  metricRelabelings: []
+  ## @param serviceMonitor.honorLabels Specify honorLabels parameter to add the scrape endpoint
+  ##
+  honorLabels: false
+  ## @param serviceMonitor.jobLabel The name of the label on the target service to use as the job name in prometheus.
+  ##
+  jobLabel: ""
+
+## Network Policy configuration
+## ref: https://kubernetes.io/docs/concepts/services-networking/network-policies/
+##
+networkPolicy:
+  ## @param networkPolicy.enabled Enable network policies
+  ##
+  enabled: false
+  ## @param networkPolicy.allowExternal Don't require server label for connections
+  ## The Policy model to apply. When set to false, only pods with the correct
+  ## server label will have network access to the ports Lana is listening
+  ## on. When true, Lana will accept connections from any source
+  ## (with the correct destination port).
+  ##
+  allowExternal: true
+  ## @param networkPolicy.extraIngress Add extra ingress rules to the NetworkPolicy
+  ## e.g:
+  ## extraIngress:
+  ##   - ports:
+  ##       - port: 1234
+  ##     from:
+  ##       - podSelector:
+  ##           - matchLabels:
+  ##               - role: frontend
+  ##       - podSelector:
+  ##           - matchExpressions:
+  ##               - key: role
+  ##                 operator: In
+  ##                 values:
+  ##                   - frontend
+  ##
+  extraIngress: []
+  ## @param networkPolicy.extraEgress Add extra egress rules to the NetworkPolicy
+  ## e.g:
+  ## extraEgress:
+  ##   - ports:
+  ##       - port: 1234
+  ##     to:
+  ##       - podSelector:
+  ##           - matchLabels:
+  ##               - role: database
+  ##
+  extraEgress: []
+  ## @param networkPolicy.ingressNSMatchLabels Labels to match to allow traffic from other namespaces
+  ## @param networkPolicy.ingressNSPodMatchLabels Pod labels to match to allow traffic from other namespaces
+  ##
+  ingressNSMatchLabels: {}
+  ingressNSPodMatchLabels: {}
