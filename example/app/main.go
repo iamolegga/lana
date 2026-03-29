@@ -51,6 +51,13 @@ func main() {
 	}
 }
 
+type sessionData struct {
+	Sub      string `json:"sub"`
+	Email    string `json:"email,omitempty"`
+	Name     string `json:"name,omitempty"`
+	Provider string `json:"provider"`
+}
+
 func handleRoot(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie(cookieName)
 	if err != nil || cookie.Value == "" {
@@ -58,10 +65,18 @@ func handleRoot(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var email string
-	if err := sc.Decode(cookieName, cookie.Value, &email); err != nil {
+	var session sessionData
+	if err := sc.Decode(cookieName, cookie.Value, &session); err != nil {
 		redirectToLANA(w, r)
 		return
+	}
+
+	displayName := session.Email
+	if displayName == "" {
+		displayName = session.Name
+	}
+	if displayName == "" {
+		displayName = session.Sub
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -84,7 +99,7 @@ func handleRoot(w http.ResponseWriter, r *http.Request) {
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
         h1 { color: #4CAF50; }
-        .email {
+        .info {
             background: #e8f5e9;
             padding: 10px;
             border-radius: 4px;
@@ -106,13 +121,13 @@ func handleRoot(w http.ResponseWriter, r *http.Request) {
 <body>
     <div class="container">
         <h1>✓ Authentication Successful!</h1>
-        <p>You are authenticated as:</p>
-        <div class="email"><strong>%s</strong></div>
-        <p>This example app received a JWT from LANA, verified its signature, and stored your email in a signed cookie.</p>
+        <p>You are authenticated via <strong>%s</strong> as:</p>
+        <div class="info"><strong>%s</strong></div>
+        <p>This example app received a JWT from LANA, verified its signature, and stored your session in a signed cookie.</p>
         <a href="/logout" class="logout">Logout</a>
     </div>
 </body>
-</html>`, email)
+</html>`, session.Provider, displayName)
 }
 
 func handleCallback(w http.ResponseWriter, r *http.Request) {
@@ -122,14 +137,14 @@ func handleCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	email, err := JWTVerify(token, parentHostname)
+	session, err := JWTVerify(token, parentHostname)
 	if err != nil {
 		log.Printf("Error verifying JWT: %v", err)
 		http.Error(w, "Invalid token", http.StatusUnauthorized)
 		return
 	}
 
-	encoded, err := sc.Encode(cookieName, email)
+	encoded, err := sc.Encode(cookieName, session)
 	if err != nil {
 		log.Printf("Error encoding cookie: %v", err)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
@@ -175,34 +190,34 @@ func redirectToLANA(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, loginURL, http.StatusFound)
 }
 
-func JWTVerify(tokenStr, parentHostname string) (string, error) {
+func JWTVerify(tokenStr, parentHostname string) (*sessionData, error) {
 	if tokenStr == "" {
-		return "", errors.New("empty token")
+		return nil, errors.New("empty token")
 	}
 
 	parser := jwt.NewParser()
 	claims := jwt.MapClaims{}
 	_, _, err := parser.ParseUnverified(tokenStr, claims)
 	if err != nil {
-		return "", fmt.Errorf("invalid token format: %w", err)
+		return nil, fmt.Errorf("invalid token format: %w", err)
 	}
 
 	issuer, err := claims.GetIssuer()
 	if err != nil || issuer == "" {
-		return "", errors.New("invalid issuer claim")
+		return nil, errors.New("invalid issuer claim")
 	}
 	issuerURL, err := url.Parse(issuer)
 	if err != nil {
-		return "", fmt.Errorf("invalid issuer URL: %w", err)
+		return nil, fmt.Errorf("invalid issuer URL: %w", err)
 	}
 
 	issuerHostname := issuerURL.Hostname()
 	if !strings.HasSuffix(issuerHostname, parentHostname) {
-		return "", errors.New("not trusted issuer")
+		return nil, errors.New("not trusted issuer")
 	}
 	publicKey, err := fetchPublicKey(issuer)
 	if err != nil {
-		return "", fmt.Errorf("failed to fetch public key: %w", err)
+		return nil, fmt.Errorf("failed to fetch public key: %w", err)
 	}
 
 	token, err := jwt.Parse(
@@ -221,27 +236,38 @@ func JWTVerify(tokenStr, parentHostname string) (string, error) {
 	)
 
 	if err != nil {
-		return "", fmt.Errorf("invalid token: %w", err)
+		return nil, fmt.Errorf("invalid token: %w", err)
 	}
 
 	if !token.Valid {
-		return "", errors.New("invalid token")
+		return nil, errors.New("invalid token")
 	}
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !ok {
-		return "", errors.New("invalid token claims")
+		return nil, errors.New("invalid token claims")
 	}
 
 	exp, err := claims.GetExpirationTime()
 	if err != nil || exp == nil || exp.Before(time.Now()) {
-		return "", errors.New("token expired")
+		return nil, errors.New("token expired")
 	}
 	sub, err := claims.GetSubject()
 	if err != nil || sub == "" {
-		return "", errors.New("invalid subject claim")
+		return nil, errors.New("invalid subject claim")
 	}
 
-	return sub, nil
+	session := &sessionData{Sub: sub}
+	if email, ok := claims["email"].(string); ok {
+		session.Email = email
+	}
+	if name, ok := claims["name"].(string); ok {
+		session.Name = name
+	}
+	if provider, ok := claims["provider"].(string); ok {
+		session.Provider = provider
+	}
+
+	return session, nil
 }
 
 func fetchPublicKey(issuer string) (*rsa.PublicKey, error) {

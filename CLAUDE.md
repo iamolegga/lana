@@ -72,8 +72,9 @@ Lana is a production-ready OAuth SSO authentication server written in Go. It pro
 - Registry pattern for pluggable providers
 - Factory functions register providers by name
 - Current implementations:
-  - [internal/providers/google/google.go](internal/providers/google/google.go) - Google OAuth
+  - [internal/providers/google/google.go](internal/providers/google/google.go) - Google OAuth (OIDC)
   - [internal/providers/facebook/facebook.go](internal/providers/facebook/facebook.go) - Facebook OAuth
+  - [internal/providers/x/x.go](internal/providers/x/x.go) - X (Twitter) OAuth
 
 **Rate Limiting** ([internal/ratelimit/limiter.go](internal/ratelimit/limiter.go))
 - Per-IP rate limiting using token bucket algorithm
@@ -122,8 +123,9 @@ Lana is a production-ready OAuth SSO authentication server written in Go. It pro
 3. Provider redirects back to `/oauth/callback/{provider}` with code
 4. Server validates state, exchanges code for tokens, fetches user info
 5. Server generates JWT signed with host-specific RSA private key
-6. JWT includes standard claims (sub, aud, exp, iat) plus custom user data
-7. Public keys exposed at `/.well-known/jwks.json` for verification by downstream services
+6. JWT `sub` claim is `hex(sha256(provider:provider_id))` for a stable, provider-agnostic identity
+7. JWT includes: `iss`, `aud`, `sub`, `provider`, `provider_id`, `exp`, `iat`, and optionally `email` and `name`
+8. Public keys exposed at `/.well-known/jwks.json` for verification by downstream services
 
 ### Important Implementation Details
 

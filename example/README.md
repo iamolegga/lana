@@ -51,7 +51,7 @@ Three-service architecture:
 ### 3. **LANA Configuration** ([lana/config.yaml](lana/config.yaml))
 
 - Production-ready configuration
-- Google OAuth provider setup
+- OAuth provider setup (Google, Facebook, X)
 - Prometheus metrics enabled
 - Wildcard redirect URL support
 - Rate limiting configured
@@ -203,7 +203,7 @@ The example client application demonstrates a complete OAuth 2.0 flow:
 4. LANA redirects back with JWT token as query parameter
 5. App fetches JWKS from LANA's `/.well-known/jwks.json`
 6. App verifies JWT signature using public key from JWKS
-7. App creates signed session cookie with user email
+7. App creates signed session cookie with user info (sub, email, name, provider)
 8. User sees authenticated welcome page
 
 **Security Features:**

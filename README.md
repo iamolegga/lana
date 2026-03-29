@@ -6,7 +6,7 @@
 <p align="center"><b>L</b>ightweight <b>A</b>uthe<b>N</b>tication <b>A</b>pp</p>
 <p align="center">A single OAuth 2.0 SSO server to simplify authentication for multiple applications.</p>
 
-Lana provides OAuth 2.0 authentication through multiple providers (Google, Facebook, and more to come) and issues JWTs for authenticated users. The server supports multi-host configurations with host-specific JWT signing keys and provider settings, making it ideal for managing authentication across multiple applications from a single deployment.
+Lana provides OAuth 2.0 authentication through multiple providers (Google, Facebook, X, and more to come) and issues JWTs for authenticated users. The server supports multi-host configurations with host-specific JWT signing keys and provider settings, making it ideal for managing authentication across multiple applications from a single deployment.
 
 ## Authentication Flow
 
@@ -32,7 +32,7 @@ sequenceDiagram
     LANA->>LANA: 11. Validate state from cookie
     LANA->>OAuth: 12. Exchange code for tokens
     OAuth-->>LANA: 13. Return tokens
-    LANA->>LANA: 14. Extract email from tokens
+    LANA->>LANA: 14. Extract user info from tokens
     LANA-->>App: 15. Redirect with own JWT (?token=<jwt>)
     App->>LANA: 16. Fetch JWKS (public keys)
     LANA-->>App: 17. Return JWKS
@@ -42,7 +42,7 @@ sequenceDiagram
 
 ## Features
 
-- **Multi-Provider OAuth 2.0** - Built-in support for Google (with OIDC) and Facebook OAuth, with a pluggable provider architecture for easy extension
+- **Multi-Provider OAuth 2.0** - Built-in support for Google (with OIDC), Facebook, and X (Twitter) OAuth, with a pluggable provider architecture for easy extension
 - **JWT Token Generation** - Issues signed JWTs with RSA-256 using host-specific private keys
 - **JWKS Endpoint** - Exposes public keys at `/.well-known/jwks.json` for downstream JWT verification
 - **Multi-Host Support** - Single server instance can handle multiple hosts with different configurations, JWT keys, and OAuth providers
@@ -59,7 +59,7 @@ Lana is built with security as a top priority:
 - **RSA-256 JWT Signing** - Industry-standard asymmetric signing using PKCS#1 PEM format
 - **AES-GCM Cookie Encryption** - State cookies encrypted with AES-256-GCM for CSRF protection
 - **OIDC Support** - Full OpenID Connect implementation for Google OAuth with ID token verification
-- **Email Verification** - Validates email verification status for OAuth providers (e.g., Google)
+- **Provider-Agnostic Identity** - Stable `sub` claim derived from `sha256(provider:id)`, with optional `email` and `name` claims when available from the provider
 - **Secure Cookie Flags** - HttpOnly, Secure, and SameSite flags prevent cookie theft and CSRF
 - **Rate Limiting** - Token bucket algorithm prevents brute force and DoS attacks
 - **Proxy-Aware IP Detection** - Supports X-Forwarded-For, CF-Connecting-IP, and X-Real-IP headers with priority-based detection
@@ -153,6 +153,12 @@ hosts:
       google:
         client_id: $EXAMPLE_GOOGLE_CLIENT_ID
         client_secret: $EXAMPLE_GOOGLE_CLIENT_SECRET
+      facebook:
+        client_id: $EXAMPLE_FB_CLIENT_ID
+        client_secret: $EXAMPLE_FB_CLIENT_SECRET
+      x:
+        client_id: $EXAMPLE_X_CLIENT_ID
+        client_secret: $EXAMPLE_X_CLIENT_SECRET
 
   auth.anotherapp.com:
     login_dir: ./web/anotherapp/
@@ -168,6 +174,9 @@ hosts:
       facebook:
         client_id: $ANOTHERAPP_FB_CLIENT_ID
         client_secret: $ANOTHERAPP_FB_CLIENT_SECRET
+      x:
+        client_id: $ANOTHERAPP_X_CLIENT_ID
+        client_secret: $ANOTHERAPP_X_CLIENT_SECRET
 ```
 
 ### Configuration Options Reference

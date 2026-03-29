@@ -1,4 +1,4 @@
-package facebook
+package x
 
 import (
 	"context"
@@ -21,18 +21,20 @@ type Provider struct {
 	providerConfig *config.OAuthProvider
 }
 
-type FacebookUser struct {
-	ID    string `json:"id"`
-	Name  string `json:"name"`
-	Email string `json:"email"`
+type xUser struct {
+	Data struct {
+		ID             string `json:"id"`
+		Name           string `json:"name"`
+		ConfirmedEmail string `json:"confirmed_email"`
+	} `json:"data"`
 }
 
 func New(providerConfig *config.OAuthProvider) (oauth.Provider, error) {
 	oauthConfig := &oauth2.Config{
 		ClientID:     providerConfig.ClientID,
 		ClientSecret: providerConfig.ClientSecret,
-		Scopes:       []string{"email", "public_profile"},
-		Endpoint:     endpoints.Facebook,
+		Scopes:       []string{"users.read", "tweet.read"},
+		Endpoint:     endpoints.X,
 	}
 
 	return &Provider{
@@ -45,8 +47,8 @@ func (p *Provider) GetAuthURL(state string, redirectURL string) string {
 	configCopy := *p.config
 	configCopy.RedirectURL = redirectURL
 
-	slog.Debug("generating authorization url", "provider", "facebook", "redirect_uri", redirectURL)
-	return configCopy.AuthCodeURL(state, oauth2.AccessTypeOffline)
+	slog.Debug("generating authorization url", "provider", "x", "redirect_uri", redirectURL)
+	return configCopy.AuthCodeURL(state)
 }
 
 func (p *Provider) ExchangeCode(ctx context.Context, code string, redirectURL string) (*oauth.TokenResponse, error) {
@@ -56,10 +58,10 @@ func (p *Provider) ExchangeCode(ctx context.Context, code string, redirectURL st
 	exchangeCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	slog.Debug("exchanging authorization code for token", "provider", "facebook")
+	slog.Debug("exchanging authorization code for token", "provider", "x")
 	token, err := configCopy.Exchange(exchangeCtx, code)
 	if err != nil {
-		slog.Error("failed to exchange auth code for token", "provider", "facebook", "error", err)
+		slog.Error("failed to exchange auth code for token", "provider", "x", "error", err)
 		return nil, fmt.Errorf("failed to exchange auth code: %w", err)
 	}
 
@@ -77,45 +79,43 @@ func (p *Provider) GetUser(ctx context.Context, tokens *oauth.TokenResponse) (*o
 	userCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	slog.Debug("fetching user info from facebook", "provider", "facebook")
+	slog.Debug("fetching user info from x", "provider", "x")
 
 	userInfo, err := p.fetchUserInfo(userCtx, tokens.AccessToken)
 	if err != nil {
-		slog.Error("failed to fetch user info", "provider", "facebook", "error", err)
+		slog.Error("failed to fetch user info", "provider", "x", "error", err)
 		return nil, fmt.Errorf("failed to fetch user info: %w", err)
 	}
 
-	if userInfo.ID == "" {
-		slog.Error("facebook user missing ID", "provider", "facebook")
-		return nil, fmt.Errorf("user ID not available from Facebook")
+	if userInfo.Data.ID == "" {
+		slog.Error("x user missing ID", "provider", "x")
+		return nil, fmt.Errorf("user ID not available from X")
 	}
 
 	user := &oauth.User{
-		ID:    userInfo.ID,
-		Email: userInfo.Email,
-		Name:  userInfo.Name,
+		ID:    userInfo.Data.ID,
+		Email: userInfo.Data.ConfirmedEmail,
+		Name:  userInfo.Data.Name,
 	}
 
 	slog.Debug("successfully retrieved user info",
-		"provider", "facebook",
+		"provider", "x",
 		"user_id", user.ID,
-		"email", user.Email,
 		"name", user.Name)
 
 	return user, nil
 }
 
 func (p *Provider) Name() string {
-	return "facebook"
+	return "x"
 }
 
-func (p *Provider) fetchUserInfo(ctx context.Context, accessToken string) (*FacebookUser, error) {
-	url := "https://graph.facebook.com/me?fields=id,name,email&access_token=" + accessToken
-
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+func (p *Provider) fetchUserInfo(ctx context.Context, accessToken string) (*xUser, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://api.x.com/2/users/me?user.fields=id,name,confirmed_email", nil)
 	if err != nil {
 		return nil, fmt.Errorf("creating request: %w", err)
 	}
+	req.Header.Set("Authorization", "Bearer "+accessToken)
 
 	client := &http.Client{Timeout: 10 * time.Second}
 	resp, err := client.Do(req)
@@ -126,16 +126,16 @@ func (p *Provider) fetchUserInfo(ctx context.Context, accessToken string) (*Face
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		slog.Error("facebook api error", "status", resp.StatusCode, "body", string(body))
-		return nil, fmt.Errorf("facebook API returned status %d", resp.StatusCode)
+		slog.Error("x api error", "status", resp.StatusCode, "body", string(body))
+		return nil, fmt.Errorf("X API returned status %d", resp.StatusCode)
 	}
 
-	body, err := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
 	if err != nil {
 		return nil, fmt.Errorf("reading response body: %w", err)
 	}
 
-	var userInfo FacebookUser
+	var userInfo xUser
 	if err := json.Unmarshal(body, &userInfo); err != nil {
 		return nil, fmt.Errorf("unmarshaling user info: %w", err)
 	}

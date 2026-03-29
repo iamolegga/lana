@@ -1,6 +1,8 @@
 package server
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -120,26 +122,33 @@ func (s *Server) handlerCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if user.Email == "" {
+	if user.ID == "" {
 		metrics.RecordAuthentication(
 			providerName,
 			r.Host,
 			"failure",
-			"email_missing",
+			"id_missing",
 		)
-		http.Error(w, "User email not available", http.StatusUnauthorized)
+		http.Error(w, "User ID not available", http.StatusUnauthorized)
 		return
 	}
 
+	subHash := sha256.Sum256([]byte(providerName + ":" + user.ID))
+	sub := hex.EncodeToString(subHash[:])
+
 	jwtClaims := jwt.MapClaims{
-		"iss":   fmt.Sprintf("%s://%s", getScheme(r), r.Host),
-		"aud":   host.jwtAudience,
-		"sub":   user.Email,
-		"email": user.Email,
-		"exp":   time.Now().Add(host.jwtExpiry).Unix(),
-		"iat":   time.Now().Unix(),
+		"iss":         fmt.Sprintf("%s://%s", getScheme(r), r.Host),
+		"aud":         host.jwtAudience,
+		"sub":         sub,
+		"provider":    providerName,
+		"provider_id": user.ID,
+		"exp":         time.Now().Add(host.jwtExpiry).Unix(),
+		"iat":         time.Now().Unix(),
 	}
 
+	if user.Email != "" {
+		jwtClaims["email"] = user.Email
+	}
 	if user.Name != "" {
 		jwtClaims["name"] = user.Name
 	}

@@ -13,6 +13,7 @@ import (
 	"github.com/iamolegga/lana/internal/oauth"
 	"github.com/iamolegga/lana/internal/providers/facebook"
 	"github.com/iamolegga/lana/internal/providers/google"
+	xprovider "github.com/iamolegga/lana/internal/providers/x"
 	"github.com/iamolegga/lana/internal/ratelimit"
 	"github.com/iamolegga/lana/internal/server"
 )
@@ -57,6 +58,7 @@ func main() {
 	registry := oauth.NewRegistry()
 	registry.Register("google", google.New)
 	registry.Register("facebook", facebook.New)
+	registry.Register("x", xprovider.New)
 
 	srv, err := server.New(server.Config{
 		Config:      cfg,

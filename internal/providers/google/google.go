@@ -12,7 +12,7 @@ import (
 
 	"github.com/coreos/go-oidc"
 	"golang.org/x/oauth2"
-	goauth "golang.org/x/oauth2/google"
+	"golang.org/x/oauth2/endpoints"
 
 	"github.com/iamolegga/lana/internal/config"
 	"github.com/iamolegga/lana/internal/oauth"
@@ -29,7 +29,7 @@ func New(providerConfig *config.OAuthProvider) (oauth.Provider, error) {
 		ClientID:     providerConfig.ClientID,
 		ClientSecret: providerConfig.ClientSecret,
 		Scopes:       []string{"email", "profile"},
-		Endpoint:     goauth.Endpoint,
+		Endpoint:     endpoints.Google,
 	}
 
 	httpClient := &http.Client{Timeout: 10 * time.Second}
@@ -129,13 +129,14 @@ func (p *Provider) GetUser(ctx context.Context, tokens *oauth.TokenResponse) (*o
 		return nil, fmt.Errorf("failed to parse claims: %w", err)
 	}
 
+	email := claims.Email
 	if !claims.EmailVerified {
-		slog.Debug("user's email is not verified", "email", claims.Email)
-		return nil, errors.New("email not verified")
+		slog.Debug("user's email is not verified, omitting email", "email", claims.Email)
+		email = ""
 	}
 
 	user := &oauth.User{
-		Email: claims.Email,
+		Email: email,
 		Name:  claims.Name,
 		ID:    claims.Sub,
 	}
