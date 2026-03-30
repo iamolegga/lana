@@ -20,6 +20,10 @@ tasks:
     sources: [.env]
     cmd: air -c .air.toml
 
+  docker:
+    desc: Build Docker image locally
+    cmd: docker build -t lana .
+
   genKey:
     desc: Generate a new RSA private key for development
     cmd: openssl genrsa -traditional -out ./dev/private.pem 2048

@@ -42,7 +42,7 @@ sequenceDiagram
 
 ## Features
 
-- **Multi-Provider OAuth 2.0** - Built-in support for Google (with OIDC), Facebook, and X (Twitter) OAuth, with a pluggable provider architecture for easy extension
+- **Multi-Provider OAuth 2.0** - Built-in support for Google (with OIDC), Facebook, and X (Twitter, with PKCE) OAuth, with a pluggable provider architecture for easy extension
 - **JWT Token Generation** - Issues signed JWTs with RSA-256 using host-specific private keys
 - **JWKS Endpoint** - Exposes public keys at `/.well-known/jwks.json` for downstream JWT verification
 - **Multi-Host Support** - Single server instance can handle multiple hosts with different configurations, JWT keys, and OAuth providers
@@ -59,6 +59,7 @@ Lana is built with security as a top priority:
 - **RSA-256 JWT Signing** - Industry-standard asymmetric signing using PKCS#1 PEM format
 - **AES-GCM Cookie Encryption** - State cookies encrypted with AES-256-GCM for CSRF protection
 - **OIDC Support** - Full OpenID Connect implementation for Google OAuth with ID token verification
+- **PKCE Support** - Proof Key for Code Exchange (RFC 7636) for providers that require it (X/Twitter)
 - **Provider-Agnostic Identity** - Stable `sub` claim derived from `sha256(provider:id)`, with optional `email` and `name` claims when available from the provider
 - **Secure Cookie Flags** - HttpOnly, Secure, and SameSite flags prevent cookie theft and CSRF
 - **Rate Limiting** - Token bucket algorithm prevents brute force and DoS attacks

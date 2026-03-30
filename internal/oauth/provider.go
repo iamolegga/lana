@@ -24,9 +24,9 @@ type TokenResponse struct {
 }
 
 type Provider interface {
-	GetAuthURL(state string, redirectURL string) string
+	GetAuthURL(state string, redirectURL string) (authURL string, codeVerifier string)
 
-	ExchangeCode(ctx context.Context, code string, redirectURL string) (*TokenResponse, error)
+	ExchangeCode(ctx context.Context, code string, redirectURL string, codeVerifier string) (*TokenResponse, error)
 
 	GetUser(ctx context.Context, tokens *TokenResponse) (*User, error)
 

@@ -11,11 +11,12 @@ import (
 )
 
 type stateCookie struct {
-	State    string `json:"state"`
-	Redirect string `json:"redirect"`
+	State        string `json:"state"`
+	Redirect     string `json:"redirect"`
+	CodeVerifier string `json:"code_verifier,omitempty"`
 }
 
-func encryptState(key []byte, state, redirect string) (string, error) {
+func encryptState(key []byte, state, redirect, codeVerifier string) (string, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
 		return "", fmt.Errorf("could not create cipher: %w", err)
@@ -32,8 +33,9 @@ func encryptState(key []byte, state, redirect string) (string, error) {
 	}
 
 	data := stateCookie{
-		State:    state,
-		Redirect: redirect,
+		State:        state,
+		Redirect:     redirect,
+		CodeVerifier: codeVerifier,
 	}
 	
 	plaintext, err := json.Marshal(data)
@@ -46,37 +48,37 @@ func encryptState(key []byte, state, redirect string) (string, error) {
 	return base64.RawURLEncoding.EncodeToString(ciphertext), nil
 }
 
-func decryptState(key []byte, encryptedData string) (string, string, error) {
+func decryptState(key []byte, encryptedData string) (state, redirect, codeVerifier string, err error) {
 	ciphertext, err := base64.RawURLEncoding.DecodeString(encryptedData)
 	if err != nil {
-		return "", "", fmt.Errorf("could not decode base64: %w", err)
+		return "", "", "", fmt.Errorf("could not decode base64: %w", err)
 	}
 
 	block, err := aes.NewCipher(key)
 	if err != nil {
-		return "", "", fmt.Errorf("could not create cipher: %w", err)
+		return "", "", "", fmt.Errorf("could not create cipher: %w", err)
 	}
 
 	aesGCM, err := cipher.NewGCM(block)
 	if err != nil {
-		return "", "", fmt.Errorf("could not create GCM: %w", err)
+		return "", "", "", fmt.Errorf("could not create GCM: %w", err)
 	}
 
 	if len(ciphertext) < aesGCM.NonceSize() {
-		return "", "", errors.New("ciphertext too short")
+		return "", "", "", errors.New("ciphertext too short")
 	}
 
 	nonce, ciphertext := ciphertext[:aesGCM.NonceSize()], ciphertext[aesGCM.NonceSize():]
 
 	plaintext, err := aesGCM.Open(nil, nonce, ciphertext, nil)
 	if err != nil {
-		return "", "", fmt.Errorf("could not decrypt: %w", err)
+		return "", "", "", fmt.Errorf("could not decrypt: %w", err)
 	}
 
 	var data stateCookie
 	if err := json.Unmarshal(plaintext, &data); err != nil {
-		return "", "", fmt.Errorf("could not unmarshal state data: %w", err)
+		return "", "", "", fmt.Errorf("could not unmarshal state data: %w", err)
 	}
 
-	return data.State, data.Redirect, nil
+	return data.State, data.Redirect, data.CodeVerifier, nil
 }

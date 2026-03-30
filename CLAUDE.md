@@ -11,7 +11,7 @@ tools to resolve library id and get library docs without me having to explicitly
 
 ## Project Overview
 
-Lana is a production-ready OAuth SSO authentication server written in Go. It provides OAuth 2.0 authentication through multiple providers (Google, Facebook) and issues JWTs for authenticated users. The server supports multi-host configurations with host-specific JWT signing keys and provider settings.
+Lana is a production-ready OAuth SSO authentication server written in Go. It provides OAuth 2.0 authentication through multiple providers (Google, Facebook, X) and issues JWTs for authenticated users. The server supports multi-host configurations with host-specific JWT signing keys and provider settings.
 
 ## Development Commands
 
@@ -68,13 +68,13 @@ Lana is a production-ready OAuth SSO authentication server written in Go. It pro
 - Host-aware: uses `Host` header to determine which config/keys to use
 
 **OAuth System** ([internal/oauth/provider.go](internal/oauth/provider.go))
-- Provider interface defines: `GetAuthURL()`, `ExchangeCode()`, `GetUser()`, `Name()`
+- Provider interface defines: `GetAuthURL()` (returns auth URL + optional PKCE code verifier), `ExchangeCode()` (accepts optional code verifier), `GetUser()`, `Name()`
 - Registry pattern for pluggable providers
 - Factory functions register providers by name
 - Current implementations:
   - [internal/providers/google/google.go](internal/providers/google/google.go) - Google OAuth (OIDC)
   - [internal/providers/facebook/facebook.go](internal/providers/facebook/facebook.go) - Facebook OAuth
-  - [internal/providers/x/x.go](internal/providers/x/x.go) - X (Twitter) OAuth
+  - [internal/providers/x/x.go](internal/providers/x/x.go) - X (Twitter) OAuth (with PKCE)
 
 **Rate Limiting** ([internal/ratelimit/limiter.go](internal/ratelimit/limiter.go))
 - Per-IP rate limiting using token bucket algorithm
@@ -89,7 +89,7 @@ Lana is a production-ready OAuth SSO authentication server written in Go. It pro
 
 **State Management** ([internal/server/state.go](internal/server/state.go))
 - OAuth state generation and validation
-- Encrypted state cookies using AES-256
+- Encrypted state cookies using AES-256 (stores state, redirect URL, and optional PKCE code verifier)
 - Prevents CSRF attacks
 
 **Logging** ([internal/logging/setup.go](internal/logging/setup.go))
@@ -119,7 +119,7 @@ Lana is a production-ready OAuth SSO authentication server written in Go. It pro
 ### JWT Flow
 
 1. User initiates login via `/oauth/login/{provider}`
-2. Server generates encrypted state, stores in cookie, redirects to OAuth provider
+2. Server generates encrypted state (+ PKCE verifier for providers that require it), stores in cookie, redirects to OAuth provider
 3. Provider redirects back to `/oauth/callback/{provider}` with code
 4. Server validates state, exchanges code for tokens, fetches user info
 5. Server generates JWT signed with host-specific RSA private key

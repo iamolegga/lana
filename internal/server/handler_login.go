@@ -53,10 +53,19 @@ func (s *Server) handlerLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	callbackURL := fmt.Sprintf("%s://%s/oauth/callback/%s",
+		getScheme(r),
+		r.Host,
+		providerName,
+	)
+
+	authURL, codeVerifier := provider.GetAuthURL(state, callbackURL)
+
 	encryptedState, err := encryptState(
 		[]byte(s.cookieSecret),
 		state,
 		redirectURLEncoded,
+		codeVerifier,
 	)
 	if err != nil {
 		slog.Error("failed to encrypt state data", "error", err)
@@ -74,12 +83,5 @@ func (s *Server) handlerLogin(w http.ResponseWriter, r *http.Request) {
 		MaxAge:   3600,
 	})
 
-	callbackURL := fmt.Sprintf("%s://%s/oauth/callback/%s",
-		getScheme(r),
-		r.Host,
-		providerName,
-	)
-
-	authURL := provider.GetAuthURL(state, callbackURL)
 	http.Redirect(w, r, authURL, http.StatusFound)
 }

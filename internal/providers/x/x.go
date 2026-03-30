@@ -33,7 +33,7 @@ func New(providerConfig *config.OAuthProvider) (oauth.Provider, error) {
 	oauthConfig := &oauth2.Config{
 		ClientID:     providerConfig.ClientID,
 		ClientSecret: providerConfig.ClientSecret,
-		Scopes:       []string{"users.read", "tweet.read"},
+		Scopes:       []string{"users.read", "tweet.read", "users.email"},
 		Endpoint:     endpoints.X,
 	}
 
@@ -43,25 +43,57 @@ func New(providerConfig *config.OAuthProvider) (oauth.Provider, error) {
 	}, nil
 }
 
-func (p *Provider) GetAuthURL(state string, redirectURL string) string {
+func (p *Provider) GetAuthURL(
+	state string,
+	redirectURL string,
+) (string, string) {
 	configCopy := *p.config
 	configCopy.RedirectURL = redirectURL
 
-	slog.Debug("generating authorization url", "provider", "x", "redirect_uri", redirectURL)
-	return configCopy.AuthCodeURL(state)
+	verifier := oauth2.GenerateVerifier()
+
+	slog.Debug(
+		"generating authorization url",
+		"provider",
+		"x",
+		"redirect_uri",
+		redirectURL,
+	)
+	return configCopy.AuthCodeURL(
+		state,
+		oauth2.S256ChallengeOption(verifier),
+	), verifier
 }
 
-func (p *Provider) ExchangeCode(ctx context.Context, code string, redirectURL string) (*oauth.TokenResponse, error) {
+func (p *Provider) ExchangeCode(
+	ctx context.Context,
+	code string,
+	redirectURL string,
+	codeVerifier string,
+) (*oauth.TokenResponse, error) {
 	configCopy := *p.config
 	configCopy.RedirectURL = redirectURL
 
-	exchangeCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	exchangeCtx, cancel := context.WithTimeout(
+		context.Background(),
+		10*time.Second,
+	)
 	defer cancel()
 
 	slog.Debug("exchanging authorization code for token", "provider", "x")
-	token, err := configCopy.Exchange(exchangeCtx, code)
+	token, err := configCopy.Exchange(
+		exchangeCtx,
+		code,
+		oauth2.VerifierOption(codeVerifier),
+	)
 	if err != nil {
-		slog.Error("failed to exchange auth code for token", "provider", "x", "error", err)
+		slog.Error(
+			"failed to exchange auth code for token",
+			"provider",
+			"x",
+			"error",
+			err,
+		)
 		return nil, fmt.Errorf("failed to exchange auth code: %w", err)
 	}
 
@@ -75,7 +107,10 @@ func (p *Provider) ExchangeCode(ctx context.Context, code string, redirectURL st
 	return response, nil
 }
 
-func (p *Provider) GetUser(ctx context.Context, tokens *oauth.TokenResponse) (*oauth.User, error) {
+func (p *Provider) GetUser(
+	ctx context.Context,
+	tokens *oauth.TokenResponse,
+) (*oauth.User, error) {
 	userCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -110,8 +145,16 @@ func (p *Provider) Name() string {
 	return "x"
 }
 
-func (p *Provider) fetchUserInfo(ctx context.Context, accessToken string) (*xUser, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://api.x.com/2/users/me?user.fields=id,name,confirmed_email", nil)
+func (p *Provider) fetchUserInfo(
+	ctx context.Context,
+	accessToken string,
+) (*xUser, error) {
+	req, err := http.NewRequestWithContext(
+		ctx,
+		http.MethodGet,
+		"https://api.x.com/2/users/me?user.fields=id,name,confirmed_email",
+		nil,
+	)
 	if err != nil {
 		return nil, fmt.Errorf("creating request: %w", err)
 	}

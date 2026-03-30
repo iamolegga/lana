@@ -52,15 +52,15 @@ func New(providerConfig *config.OAuthProvider) (oauth.Provider, error) {
 	}, nil
 }
 
-func (p *Provider) GetAuthURL(state string, redirectURL string) string {
+func (p *Provider) GetAuthURL(state string, redirectURL string) (string, string) {
 	configCopy := *p.config
 	configCopy.RedirectURL = redirectURL
 
 	slog.Debug("generating authorization url", "provider", "google", "redirect_uri", redirectURL)
-	return configCopy.AuthCodeURL(state, oauth2.AccessTypeOffline, oauth2.ApprovalForce)
+	return configCopy.AuthCodeURL(state, oauth2.AccessTypeOffline, oauth2.ApprovalForce), ""
 }
 
-func (p *Provider) ExchangeCode(ctx context.Context, code string, redirectURL string) (*oauth.TokenResponse, error) {
+func (p *Provider) ExchangeCode(ctx context.Context, code string, redirectURL string, _ string) (*oauth.TokenResponse, error) {
 	configCopy := *p.config
 	configCopy.RedirectURL = redirectURL
 

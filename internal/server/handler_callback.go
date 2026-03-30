@@ -38,7 +38,7 @@ func (s *Server) handlerCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	expectedState, redirectURL, err := decryptState(
+	expectedState, redirectURL, codeVerifier, err := decryptState(
 		[]byte(s.cookieSecret),
 		cookie.Value,
 	)
@@ -92,7 +92,7 @@ func (s *Server) handlerCallback(w http.ResponseWriter, r *http.Request) {
 		providerName,
 	)
 
-	tokens, err := provider.ExchangeCode(r.Context(), code, callbackURL)
+	tokens, err := provider.ExchangeCode(r.Context(), code, callbackURL, codeVerifier)
 	if err != nil {
 		slog.Debug("token exchange failed", "error", err)
 		metrics.RecordAuthentication(
