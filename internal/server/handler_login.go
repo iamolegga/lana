@@ -73,13 +73,23 @@ func (s *Server) handlerLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	sameSite := http.SameSiteLaxMode
+	secure := isSecure(r)
+	if providerName == "apple" {
+		// Apple uses response_mode=form_post, which is a cross-site POST.
+		// SameSite=Lax cookies are not sent on cross-site POST requests,
+		// so we must use SameSite=None (which requires Secure=true).
+		sameSite = http.SameSiteNoneMode
+		secure = true
+	}
+
 	http.SetCookie(w, &http.Cookie{
 		Name:     s.cookieName,
 		Value:    encryptedState,
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   isSecure(r),
-		SameSite: http.SameSiteLaxMode,
+		Secure:   secure,
+		SameSite: sameSite,
 		MaxAge:   3600,
 	})
 

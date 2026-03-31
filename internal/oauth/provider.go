@@ -21,6 +21,7 @@ type TokenResponse struct {
 	RefreshToken string
 	IDToken      string
 	ExpiresIn    int
+	RawUserInfo  string // Raw user info from callback (used by Apple form POST)
 }
 
 type Provider interface {

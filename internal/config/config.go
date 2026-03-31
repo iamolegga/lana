@@ -16,6 +16,37 @@ var validate *validator.Validate
 
 func init() {
 	validate = validator.New()
+	validate.RegisterStructValidation(validateOAuthProvider, OAuthProvider{})
+}
+
+func validateOAuthProvider(sl validator.StructLevel) {
+	p := sl.Current().Interface().(OAuthProvider)
+
+	hasAppleFields := p.TeamID != "" || p.KeyID != "" || p.PrivateKeyFile != "" || p.ServicesID != ""
+
+	if hasAppleFields {
+		if p.ServicesID == "" {
+			sl.ReportError(p.ServicesID, "ServicesID", "ServicesID", "required_with_apple", "")
+		}
+		if p.TeamID == "" {
+			sl.ReportError(p.TeamID, "TeamID", "TeamID", "required_with_apple", "")
+		}
+		if p.KeyID == "" {
+			sl.ReportError(p.KeyID, "KeyID", "KeyID", "required_with_apple", "")
+		}
+		if p.PrivateKeyFile == "" {
+			sl.ReportError(p.PrivateKeyFile, "PrivateKeyFile", "PrivateKeyFile", "required_with_apple", "")
+		} else if _, err := os.Stat(p.PrivateKeyFile); err != nil {
+			sl.ReportError(p.PrivateKeyFile, "PrivateKeyFile", "PrivateKeyFile", "file", "")
+		}
+	} else {
+		if p.ClientID == "" {
+			sl.ReportError(p.ClientID, "ClientID", "ClientID", "required", "")
+		}
+		if p.ClientSecret == "" {
+			sl.ReportError(p.ClientSecret, "ClientSecret", "ClientSecret", "required", "")
+		}
+	}
 }
 
 type Config struct {
@@ -57,8 +88,14 @@ type HostConfig struct {
 }
 
 type OAuthProvider struct {
-	ClientID     string `yaml:"client_id"     validate:"required"`
-	ClientSecret string `yaml:"client_secret" validate:"required"`
+	ClientID     string `yaml:"client_id"`
+	ClientSecret string `yaml:"client_secret"`
+
+	// Apple-specific fields (all required when using Apple Sign In)
+	ServicesID     string `yaml:"services_id"`
+	TeamID         string `yaml:"team_id"`
+	KeyID          string `yaml:"key_id"`
+	PrivateKeyFile string `yaml:"private_key_file"`
 }
 
 func New(path string) (cfg Config, err error) {

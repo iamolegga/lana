@@ -6,7 +6,7 @@
 <p align="center"><b>L</b>ightweight <b>A</b>uthe<b>N</b>tication <b>A</b>pp</p>
 <p align="center">A single OAuth 2.0 SSO server to simplify authentication for multiple applications.</p>
 
-Lana provides OAuth 2.0 authentication through multiple providers (Google, Facebook, X, and more to come) and issues JWTs for authenticated users. The server supports multi-host configurations with host-specific JWT signing keys and provider settings, making it ideal for managing authentication across multiple applications from a single deployment.
+Lana provides OAuth 2.0 authentication through multiple providers (Google, Facebook, X, Apple, and more to come) and issues JWTs for authenticated users. The server supports multi-host configurations with host-specific JWT signing keys and provider settings, making it ideal for managing authentication across multiple applications from a single deployment.
 
 ## Authentication Flow
 
@@ -42,7 +42,7 @@ sequenceDiagram
 
 ## Features
 
-- **Multi-Provider OAuth 2.0** - Built-in support for Google (with OIDC), Facebook, and X (Twitter, with PKCE) OAuth, with a pluggable provider architecture for easy extension
+- **Multi-Provider OAuth 2.0** - Built-in support for Google (with OIDC), Facebook, X (Twitter, with PKCE), and Apple OAuth, with a pluggable provider architecture for easy extension
 - **JWT Token Generation** - Issues signed JWTs with RSA-256 using host-specific private keys
 - **JWKS Endpoint** - Exposes public keys at `/.well-known/jwks.json` for downstream JWT verification
 - **Multi-Host Support** - Single server instance can handle multiple hosts with different configurations, JWT keys, and OAuth providers
@@ -58,7 +58,7 @@ Lana is built with security as a top priority:
 
 - **RSA-256 JWT Signing** - Industry-standard asymmetric signing using PKCS#1 PEM format
 - **AES-GCM Cookie Encryption** - State cookies encrypted with AES-256-GCM for CSRF protection
-- **OIDC Support** - Full OpenID Connect implementation for Google OAuth with ID token verification
+- **OIDC Support** - Full OpenID Connect implementation for Google and Apple OAuth with ID token verification
 - **PKCE Support** - Proof Key for Code Exchange (RFC 7636) for providers that require it (X/Twitter)
 - **Provider-Agnostic Identity** - Stable `sub` claim derived from `sha256(provider:id)`, with optional `email` and `name` claims when available from the provider
 - **Secure Cookie Flags** - HttpOnly, Secure, and SameSite flags prevent cookie theft and CSRF
@@ -160,6 +160,11 @@ hosts:
       x:
         client_id: $EXAMPLE_X_CLIENT_ID
         client_secret: $EXAMPLE_X_CLIENT_SECRET
+      apple:
+        services_id: $EXAMPLE_APPLE_SERVICES_ID
+        team_id: $EXAMPLE_APPLE_TEAM_ID
+        key_id: $EXAMPLE_APPLE_KEY_ID
+        private_key_file: "./keys/apple-example.p8"
 
   auth.anotherapp.com:
     login_dir: ./web/anotherapp/
@@ -178,6 +183,11 @@ hosts:
       x:
         client_id: $ANOTHERAPP_X_CLIENT_ID
         client_secret: $ANOTHERAPP_X_CLIENT_SECRET
+      apple:
+        services_id: $ANOTHERAPP_APPLE_SERVICES_ID
+        team_id: $ANOTHERAPP_APPLE_TEAM_ID
+        key_id: $ANOTHERAPP_APPLE_KEY_ID
+        private_key_file: "./keys/apple-anotherapp.p8"
 ```
 
 ### Configuration Options Reference
@@ -202,8 +212,12 @@ hosts:
 | `hosts.<hostname>.jwt.kid` | string | Yes | - | Key ID for JWT header |
 | `hosts.<hostname>.jwt.audience` | string | Yes | - | JWT audience claim (aud) |
 | `hosts.<hostname>.jwt.expiry` | duration | Yes | - | JWT expiration time (e.g., "1h", "30m") |
-| `hosts.<hostname>.providers.<name>.client_id` | string | Yes | - | OAuth provider client/app ID |
-| `hosts.<hostname>.providers.<name>.client_secret` | string | Yes | - | OAuth provider client/app secret |
+| `hosts.<hostname>.providers.<name>.client_id` | string | Non-Apple | - | OAuth provider client/app ID |
+| `hosts.<hostname>.providers.<name>.client_secret` | string | Non-Apple | - | OAuth provider client/app secret |
+| `hosts.<hostname>.providers.<name>.services_id` | string | Apple only | - | Apple Services ID (required for Apple provider) |
+| `hosts.<hostname>.providers.<name>.team_id` | string | Apple only | - | Apple Team ID (required for Apple provider) |
+| `hosts.<hostname>.providers.<name>.key_id` | string | Apple only | - | Apple Key ID (required for Apple provider) |
+| `hosts.<hostname>.providers.<name>.private_key_file` | string | Apple only | - | Path to Apple .p8 private key (required for Apple provider) |
 
 Variables are substituted at server startup using `$VAR_NAME` syntax. If a variable is missing, the server will fail to start with a clear error message.
 

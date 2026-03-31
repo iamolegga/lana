@@ -178,6 +178,10 @@ func (s *Server) setupRoutes() http.Handler {
 		"GET /oauth/callback/{provider}",
 		withRateLimit(http.HandlerFunc(s.handlerCallback)),
 	)
+	mux.Handle(
+		"POST /oauth/callback/{provider}",
+		withRateLimit(http.HandlerFunc(s.handlerCallback)),
+	)
 	mux.Handle("GET /", withRateLimit(http.HandlerFunc(s.handlerRoot)))
 
 	// Register metrics endpoint if enabled

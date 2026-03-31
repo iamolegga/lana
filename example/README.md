@@ -51,7 +51,7 @@ Three-service architecture:
 ### 3. **LANA Configuration** ([lana/config.yaml](lana/config.yaml))
 
 - Production-ready configuration
-- OAuth provider setup (Google, Facebook, X)
+- OAuth provider setup (Google, Facebook, X, Apple)
 - Prometheus metrics enabled
 - Wildcard redirect URL support
 - Rate limiting configured

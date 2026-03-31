@@ -54,7 +54,7 @@ func (s *Server) handlerCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	actualState := r.URL.Query().Get("state")
+	actualState := r.FormValue("state")
 	if actualState != expectedState {
 		slog.Debug("state mismatch",
 			"expected", expectedState,
@@ -70,17 +70,17 @@ func (s *Server) handlerCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if errorMsg := r.URL.Query().Get("error"); errorMsg != "" {
+	if errorMsg := r.FormValue("error"); errorMsg != "" {
 		slog.Debug("OAuth error response",
 			"error", errorMsg,
-			"description", r.URL.Query().Get("error_description"),
+			"description", r.FormValue("error_description"),
 		)
 		metrics.RecordAuthentication(providerName, r.Host, "failure", "user_denied")
 		http.Error(w, "Authentication failed: "+errorMsg, http.StatusBadRequest)
 		return
 	}
 
-	code := r.URL.Query().Get("code")
+	code := r.FormValue("code")
 	if code == "" {
 		http.Error(w, "Missing code parameter", http.StatusBadRequest)
 		return
@@ -107,6 +107,10 @@ func (s *Server) handlerCallback(w http.ResponseWriter, r *http.Request) {
 			http.StatusBadRequest,
 		)
 		return
+	}
+
+	if userJSON := r.FormValue("user"); userJSON != "" {
+		tokens.RawUserInfo = userJSON
 	}
 
 	user, err := provider.GetUser(r.Context(), tokens)

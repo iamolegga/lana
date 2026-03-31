@@ -11,7 +11,7 @@ tools to resolve library id and get library docs without me having to explicitly
 
 ## Project Overview
 
-Lana is a production-ready OAuth SSO authentication server written in Go. It provides OAuth 2.0 authentication through multiple providers (Google, Facebook, X) and issues JWTs for authenticated users. The server supports multi-host configurations with host-specific JWT signing keys and provider settings.
+Lana is a production-ready OAuth SSO authentication server written in Go. It provides OAuth 2.0 authentication through multiple providers (Google, Facebook, X, Apple) and issues JWTs for authenticated users. The server supports multi-host configurations with host-specific JWT signing keys and provider settings.
 
 ## Development Commands
 
@@ -63,6 +63,7 @@ Lana is a production-ready OAuth SSO authentication server written in Go. It pro
   - `GET /.well-known/jwks.json` - JSON Web Key Set for JWT verification
   - `GET /oauth/login/{provider}` - Initiate OAuth flow
   - `GET /oauth/callback/{provider}` - OAuth callback handler
+  - `POST /oauth/callback/{provider}` - OAuth callback handler (for Apple form POST)
   - `GET /` - Root handler (serves login page)
 - All routes wrapped with rate limiting middleware
 - Host-aware: uses `Host` header to determine which config/keys to use
@@ -75,6 +76,7 @@ Lana is a production-ready OAuth SSO authentication server written in Go. It pro
   - [internal/providers/google/google.go](internal/providers/google/google.go) - Google OAuth (OIDC)
   - [internal/providers/facebook/facebook.go](internal/providers/facebook/facebook.go) - Facebook OAuth
   - [internal/providers/x/x.go](internal/providers/x/x.go) - X (Twitter) OAuth (with PKCE)
+  - [internal/providers/apple/apple.go](internal/providers/apple/apple.go) - Apple OAuth (OIDC)
 
 **Rate Limiting** ([internal/ratelimit/limiter.go](internal/ratelimit/limiter.go))
 - Per-IP rate limiting using token bucket algorithm
