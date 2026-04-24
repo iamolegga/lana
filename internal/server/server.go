@@ -16,7 +16,6 @@ import (
 	"github.com/iamolegga/lana/internal/logging"
 	"github.com/iamolegga/lana/internal/oauth"
 	"github.com/iamolegga/lana/internal/ratelimit"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 type hostData struct {
@@ -30,13 +29,12 @@ type hostData struct {
 }
 
 type Server struct {
-	cookieName    string
-	cookieSecret  string
-	serverPort    string
-	rateLimiter   ratelimit.Limiter
-	hosts         map[string]*hostData
-	httpServer    *http.Server
-	metricsConfig config.Config
+	cookieName   string
+	cookieSecret string
+	serverPort   string
+	rateLimiter  ratelimit.Limiter
+	hosts        map[string]*hostData
+	httpServer   *http.Server
 }
 
 type Config struct {
@@ -116,12 +114,11 @@ func New(cfg Config) (*Server, error) {
 	}
 
 	server := &Server{
-		cookieName:    cfg.Config.Cookie.Name,
-		cookieSecret:  cfg.Config.Cookie.Secret,
-		serverPort:    cfg.Config.Server.Port,
-		rateLimiter:   cfg.RateLimiter,
-		hosts:         hosts,
-		metricsConfig: cfg.Config,
+		cookieName:   cfg.Config.Cookie.Name,
+		cookieSecret: cfg.Config.Cookie.Secret,
+		serverPort:   cfg.Config.Server.Port,
+		rateLimiter:  cfg.RateLimiter,
+		hosts:        hosts,
 	}
 
 	addr := fmt.Sprintf(":%s", server.serverPort)
@@ -173,9 +170,6 @@ func (s *Server) setupRoutes() http.Handler {
 		return s.rateLimiter.Limit(handler)
 	}
 
-	// Health check endpoint (no rate limiting - used by orchestrator)
-	mux.Handle("GET /healthz", http.HandlerFunc(healthCheckHandler))
-
 	mux.Handle(
 		"GET /.well-known/jwks.json",
 		withRateLimit(http.HandlerFunc(s.handlerJwks)),
@@ -194,20 +188,9 @@ func (s *Server) setupRoutes() http.Handler {
 	)
 	mux.Handle("GET /", withRateLimit(http.HandlerFunc(s.handlerRoot)))
 
-	// Register metrics endpoint if enabled
-	metricsPath := ""
-	if s.metricsConfig.Metrics.Enable {
-		metricsPath = s.metricsConfig.Metrics.Path
-		if metricsPath == "" {
-			metricsPath = "/metrics"
-		}
-		mux.Handle("GET "+metricsPath, promhttp.Handler())
-		slog.Info("metrics endpoint enabled", "path", metricsPath)
-	}
-
 	// Apply middleware in reverse order (last applied is executed first)
 	handler := logging.Middleware(mux)
-	handler = metricsMiddleware(handler, metricsPath)
+	handler = metricsMiddleware(handler)
 
 	return handler
 }

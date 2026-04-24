@@ -4,6 +4,12 @@ cookie:
 ratelimit:
   x_forwarded_for_index: -1
 
+observability:
+  port: 9090
+  metrics:
+    enabled: true
+    go_metrics: false
+
 hosts:
   auth.lanaexample.dev:
     login_dir: /etc/lana/login/

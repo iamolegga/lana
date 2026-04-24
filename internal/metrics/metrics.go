@@ -18,10 +18,11 @@ var (
 	enabled bool
 )
 
-// Init initializes the metrics system
+// Init initializes the metrics system. Metrics are exposed on the observability
+// listener only when enabled is true; otherwise collectors are not registered
+// and Record* helpers are no-ops.
 func Init(enable bool, goMetrics bool) {
 	enabled = enable
-
 	if !enabled {
 		return
 	}
@@ -74,14 +75,14 @@ func Init(enable bool, goMetrics bool) {
 	)
 }
 
-// Enabled returns whether metrics are enabled
+// Enabled reports whether metrics collection is turned on.
 func Enabled() bool {
 	return enabled
 }
 
 // RecordHTTPRequest records an HTTP request metric
 func RecordHTTPRequest(method, path, statusCode, host string) {
-	if !enabled || HTTPRequestsTotal == nil {
+	if !enabled {
 		return
 	}
 	HTTPRequestsTotal.WithLabelValues(method, path, statusCode, host).Inc()
@@ -89,7 +90,7 @@ func RecordHTTPRequest(method, path, statusCode, host string) {
 
 // RecordHTTPDuration records an HTTP request duration metric
 func RecordHTTPDuration(method, path, host string, duration float64) {
-	if !enabled || HTTPRequestDuration == nil {
+	if !enabled {
 		return
 	}
 	HTTPRequestDuration.WithLabelValues(method, path, host).Observe(duration)
@@ -97,7 +98,7 @@ func RecordHTTPDuration(method, path, host string, duration float64) {
 
 // RecordAuthentication records an authentication attempt metric
 func RecordAuthentication(provider, host, status, reason string) {
-	if !enabled || AuthenticationsTotal == nil {
+	if !enabled {
 		return
 	}
 	AuthenticationsTotal.WithLabelValues(provider, host, status, reason).Inc()

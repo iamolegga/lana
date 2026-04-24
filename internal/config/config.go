@@ -67,11 +67,13 @@ type Config struct {
 		Level  string `yaml:"level" validate:"oneof=debug info warn error"`
 		Format string `yaml:"format" validate:"oneof=text json"`
 	} `yaml:"logging"`
-	Metrics struct {
-		Enable    bool   `yaml:"enable"`
-		GoMetrics bool   `yaml:"go_metrics"`
-		Path      string `yaml:"path"`
-	} `yaml:"metrics"`
+	Observability struct {
+		Port    int `yaml:"port" validate:"required,min=1,max=65535"`
+		Metrics struct {
+			Enabled   bool `yaml:"enabled"`
+			GoMetrics bool `yaml:"go_metrics"`
+		} `yaml:"metrics"`
+	} `yaml:"observability"`
 	Admin struct {
 		Enabled bool `yaml:"enabled"`
 		Port    int  `yaml:"port" validate:"required_if=Enabled true,omitempty,min=1,max=65535"`
@@ -186,9 +188,7 @@ func applyDefaults(cfg *Config) {
 		cfg.Logging.Format = "text"
 	}
 
-	// Metrics defaults
-	// enable and go_metrics default to false (already zero value for bool)
-	if cfg.Metrics.Enable && cfg.Metrics.Path == "" {
-		cfg.Metrics.Path = "/metrics"
-	}
+	// Observability defaults
+	// go_metrics defaults to false (already zero value for bool).
+	// Port is required — validated, no default.
 }

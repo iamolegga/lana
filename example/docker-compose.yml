@@ -34,6 +34,7 @@ services:
       COOKIE_SECRET: abcdefghijklmnopqrstuvwxyz123456
     expose:
       - "8080"
+      - "9090"
     networks:
       - lana-network
 

@@ -183,8 +183,8 @@ This will:
 
 **LANA Endpoints:**
 - JWKS: `https://auth.lanaexample.dev/.well-known/jwks.json`
-- Metrics: `https://auth.lanaexample.dev/metrics`
 - Login page: `https://auth.lanaexample.dev/`
+- Metrics / health (observability port, not routed through Traefik): from inside the Docker network at `http://lana:9090/metrics` and `http://lana:9090/healthz`
 
 **App Endpoints:**
 - Home: `https://app.lanaexample.dev/`

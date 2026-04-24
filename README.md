@@ -131,11 +131,13 @@ logging:
   level: "info"  # debug, info, warn, error
   format: "json"  # json, text
 
-# Metrics - Prometheus (optional, disabled by default)
-metrics:
-  enable: true
-  go_metrics: false
-  path: "/metrics"
+# Observability listener — /healthz (always) and /metrics (when enabled)
+# on a dedicated port. Not exposed via the public Ingress when deployed via the Helm chart.
+observability:
+  port: 9090
+  metrics:
+    enabled: true
+    go_metrics: false
 
 # Multi-host configuration
 hosts:
@@ -203,9 +205,9 @@ hosts:
 | `ratelimit.x_forwarded_for_index` | int | No | `0` | Which IP to use from X-Forwarded-For (0-based, -1 for rightmost) |
 | `logging.level` | string | No | `"info"` | Log level: `debug`, `info`, `warn`, `error` |
 | `logging.format` | string | No | `"text"` | Log format: `json` or `text` |
-| `metrics.enable` | bool | No | `false` | Enable Prometheus metrics endpoint (entire `metrics` section is optional) |
-| `metrics.go_metrics` | bool | No | `false` | Include Go runtime metrics (memory, goroutines, GC) |
-| `metrics.path` | string | No | `"/metrics"` | Metrics endpoint path |
+| `observability.port` | int | Yes | - | Port for the observability listener (serves `/healthz`; also `/metrics` when enabled) |
+| `observability.metrics.enabled` | bool | No | `false` | Register Prometheus collectors and expose `/metrics` on the observability port |
+| `observability.metrics.go_metrics` | bool | No | `false` | Include Go runtime metrics (memory, goroutines, GC); applies when metrics are enabled |
 | `hosts.<hostname>.login_dir` | string | Yes | - | Path to login page directory |
 | `hosts.<hostname>.allowed_redirect_urls` | []string | Yes | - | List of allowed redirect URLs (supports wildcards: `*`) |
 | `hosts.<hostname>.jwt.private_key_file` | string | Yes | - | Path to RSA private key (PEM format) |

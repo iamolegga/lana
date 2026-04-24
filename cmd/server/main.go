@@ -43,11 +43,9 @@ func main() {
 	logging.Setup(cfg.Logging.Level, cfg.Logging.Format, cfg.Env)
 	slog.Info("starting auth server")
 
-	// Initialize metrics system
-	metrics.Init(cfg.Metrics.Enable, cfg.Metrics.GoMetrics)
-	if cfg.Metrics.Enable {
-		slog.Info("metrics enabled", "go_metrics", cfg.Metrics.GoMetrics)
-	}
+	// Initialize metrics system. When enabled, collectors are registered and the
+	// observability listener exposes /metrics.
+	metrics.Init(cfg.Observability.Metrics.Enabled, cfg.Observability.Metrics.GoMetrics)
 
 	limiterConfig := ratelimit.Config{
 		RequestsPerMinute:  cfg.RateLimit.RequestsPerMinute,
@@ -90,6 +88,14 @@ func main() {
 		}()
 	}
 
+	obsHTTP := server.NewObservabilityServer(cfg)
+	go func() {
+		if err := server.StartObservability(obsHTTP); err != nil && err != http.ErrServerClosed {
+			slog.Error("observability server failed", "error", err)
+			os.Exit(1)
+		}
+	}()
+
 	slog.Info("server started successfully", "port", cfg.Server.Port)
-	server.WaitForShutdown(srv.GetHTTPServer(), adminHTTP)
+	server.WaitForShutdown(srv.GetHTTPServer(), adminHTTP, obsHTTP)
 }
