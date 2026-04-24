@@ -2,6 +2,31 @@ apiVersion: v1
 entries:
   lana:
   - apiVersion: v2
+    appVersion: 0.5.0
+    created: "2026-04-24T16:20:32.553970054Z"
+    description: Production-ready OAuth SSO authentication server written in Go
+    digest: 1f776af19a2200845681200ee81bbb764429cd7485cdc043a3c03a560819e505
+    home: https://github.com/iamolegga/lana
+    icon: https://raw.githubusercontent.com/iamolegga/lana/main/lana.svg
+    keywords:
+    - oauth
+    - sso
+    - authentication
+    - jwt
+    - oauth2
+    - google
+    - facebook
+    maintainers:
+    - name: iamolegga
+      url: https://github.com/iamolegga
+    name: lana
+    sources:
+    - https://github.com/iamolegga/lana
+    type: application
+    urls:
+    - https://github.com/iamolegga/lana/releases/download/lana-0.3.0/lana-0.3.0.tgz
+    version: 0.3.0
+  - apiVersion: v2
     appVersion: 0.4.0
     created: "2026-04-24T14:51:20.57172178Z"
     description: Production-ready OAuth SSO authentication server written in Go
@@ -51,4 +76,4 @@ entries:
     urls:
     - https://github.com/iamolegga/lana/releases/download/lana-0.1.0/lana-0.1.0.tgz
     version: 0.1.0
-generated: "2026-04-24T14:51:20.571734804Z"
+generated: "2026-04-24T16:20:32.553981596Z"
