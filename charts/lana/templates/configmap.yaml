@@ -1,4 +1,20 @@
 {{- if include "lana.createConfigMap" . }}
+{{- /*
+When config.admin.enabled is true, the chart owns each host's login_dir.
+Reject any host entry that sets login_dir explicitly, then inject the
+computed path (<loginAssets.mountPath>/<slug(host)>/) into every host.
+Slug: lower, then replace "." and ":" with "-".
+*/ -}}
+{{- $cfg := deepCopy .Values.config -}}
+{{- if and $cfg.admin $cfg.admin.enabled -}}
+  {{- range $hostname, $host := $cfg.hosts -}}
+    {{- if $host.login_dir -}}
+      {{- fail (printf "config.admin.enabled=true: remove login_dir from host %q; the chart computes it from the host name" $hostname) -}}
+    {{- end -}}
+    {{- $slug := $hostname | lower | replace "." "-" | replace ":" "-" -}}
+    {{- $_ := set $host "login_dir" (printf "%s/%s/" (trimSuffix "/" $.Values.loginAssets.mountPath) $slug) -}}
+  {{- end -}}
+{{- end }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -10,5 +26,5 @@ metadata:
   {{- end }}
 data:
   config.yaml: |
-{{- .Values.config | toYaml | nindent 4 }}
+{{- $cfg | toYaml | nindent 4 }}
 {{- end }}

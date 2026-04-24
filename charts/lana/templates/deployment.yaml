@@ -62,15 +62,45 @@ spec:
       {{- if .Values.tolerations }}
       tolerations: {{- toYaml .Values.tolerations | nindent 8 }}
       {{- end }}
-      {{- if .Values.initContainers }}
-      initContainers: {{- toYaml .Values.initContainers | nindent 8 }}
+      {{- if or .Values.initContainers (and .Values.config.admin .Values.config.admin.enabled) }}
+      initContainers:
+        {{- if and .Values.config.admin .Values.config.admin.enabled }}
+        - name: mkdir-login-assets
+          image: busybox:1.36
+          imagePullPolicy: IfNotPresent
+          command:
+            - sh
+            - -c
+            - |
+              set -eu
+              grep -E '^[[:space:]]*login_dir:' /etc/lana/config.yaml \
+                | awk '{print $2}' \
+                | tr -d '"' \
+                | while read -r d; do
+                    [ -z "$d" ] && continue
+                    mkdir -p "$d"
+                  done
+          volumeMounts:
+            - name: config
+              mountPath: /etc/lana
+              readOnly: true
+            - name: login-assets
+              mountPath: {{ .Values.loginAssets.mountPath | quote }}
+        {{- end }}
+        {{- if .Values.initContainers }}
+        {{- toYaml .Values.initContainers | nindent 8 }}
+        {{- end }}
       {{- end }}
       containers:
         - name: lana
           image: {{ include "lana.image" . }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           {{- if .Values.containerSecurityContext.enabled }}
-          securityContext: {{- omit .Values.containerSecurityContext "enabled" | toYaml | nindent 12 }}
+          {{- $secCtx := omit .Values.containerSecurityContext "enabled" -}}
+          {{- if and .Values.config.admin .Values.config.admin.enabled }}
+          {{- $_ := set $secCtx "readOnlyRootFilesystem" true -}}
+          {{- end }}
+          securityContext: {{- $secCtx | toYaml | nindent 12 }}
           {{- end }}
           {{- if .Values.command }}
           command: {{- toYaml .Values.command | nindent 12 }}
@@ -109,6 +139,11 @@ spec:
             - name: http
               containerPort: {{ .Values.service.ports.http }}
               protocol: TCP
+            {{- if and .Values.config.admin .Values.config.admin.enabled }}
+            - name: admin
+              containerPort: {{ .Values.config.admin.port }}
+              protocol: TCP
+            {{- end }}
           {{- if .Values.livenessProbe.enabled }}
           livenessProbe:
             httpGet:
@@ -158,6 +193,10 @@ spec:
             - name: config
               mountPath: /etc/lana
               readOnly: true
+            {{- if and .Values.config.admin .Values.config.admin.enabled }}
+            - name: login-assets
+              mountPath: {{ .Values.loginAssets.mountPath | quote }}
+            {{- end }}
             {{- if .Values.extraVolumeMounts }}
             {{- toYaml .Values.extraVolumeMounts | nindent 12 }}
             {{- end }}
@@ -168,6 +207,11 @@ spec:
         - name: config
           configMap:
             name: {{ include "lana.configMapName" . }}
+        {{- if and .Values.config.admin .Values.config.admin.enabled }}
+        - name: login-assets
+          persistentVolumeClaim:
+            claimName: {{ include "lana.fullname" . }}-login-assets
+        {{- end }}
         {{- if .Values.extraVolumes }}
         {{- toYaml .Values.extraVolumes | nindent 8 }}
         {{- end }}

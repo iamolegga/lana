@@ -282,6 +282,35 @@ extraEnvVarsCM: ""
 ##
 extraEnvVarsSecret: ""
 
+## @section Login Assets Admin Upload
+
+## Storage for per-host login asset directories, used by the admin upload
+## endpoint (POST /admin/login-assets/{host}). Enable the feature via
+## `config.admin.enabled=true` (Lana application config); the values below
+## control only the Kubernetes plumbing (PVC, mountPath).
+##
+## When `config.admin.enabled=true`, the chart:
+##   - Renders a PVC using the settings below.
+##   - Renders a second Service exposing `config.admin.port` (no Ingress).
+##   - Mounts the PVC at `loginAssets.mountPath` on the main and init
+##     containers.
+##   - Runs a busybox init container that `mkdir -p`s each host's login_dir.
+##   - Injects `login_dir: {{ loginAssets.mountPath }}/<slug(host)>/` into
+##     each host entry in the rendered config.yaml.
+##   - Fails `helm install/upgrade` if any host entry in values has
+##     `login_dir` set explicitly (chart owns the path in this mode).
+##
+## @param loginAssets.mountPath Directory inside the pod where the assets PVC is mounted
+## @param loginAssets.storageClass StorageClass for the PVC (empty for cluster default)
+## @param loginAssets.size PVC size
+## @param loginAssets.accessMode PVC access mode (bump to ReadWriteMany for replicaCount > 1)
+##
+loginAssets:
+  mountPath: /var/lana/login
+  storageClass: ""
+  size: 1Gi
+  accessMode: ReadWriteOnce
+
 ## @section Traffic Exposure Parameters
 
 ## Lana service parameters
@@ -461,9 +490,17 @@ config: {}
   # logging:
   #   level: info
   #   format: json
+  # admin:
+  #   # Enables a second HTTP listener for per-host login-asset uploads
+  #   # (POST /admin/login-assets/{host}). The chart exposes this on a
+  #   # separate ClusterIP Service with no Ingress. When enabled, omit
+  #   # login_dir from host entries below — the chart computes it.
+  #   enabled: true
+  #   port: 8081
   # hosts:
   #   auth.example.com:
-  #     login_dir: /mnt/lana/login/
+  #     # login_dir is omitted when admin.enabled=true (chart injects it).
+  #     # Set explicitly when admin is disabled.
   #     allowed_redirect_urls:
   #       - "https://*.example.com/*"
   #     jwt:

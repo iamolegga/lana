@@ -156,6 +156,16 @@ func (s *Server) GetHTTPServer() *http.Server {
 	return s.httpServer
 }
 
+// LoginDirs returns the per-host login directory map. Used to wire the
+// admin upload handler without exposing the full hostData struct.
+func (s *Server) LoginDirs() map[string]string {
+	out := make(map[string]string, len(s.hosts))
+	for name, h := range s.hosts {
+		out[name] = h.loginDir
+	}
+	return out
+}
+
 func (s *Server) setupRoutes() http.Handler {
 	mux := http.NewServeMux()
 

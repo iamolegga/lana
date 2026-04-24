@@ -59,14 +59,23 @@ Lana is a production-ready OAuth SSO authentication server written in Go. It pro
 
 **HTTP Server** ([internal/server/server.go](internal/server/server.go))
 - Standard library HTTP server with timeouts (read: 15s, write: 15s, idle: 60s)
-- Routes:
+- Routes on the public listener:
   - `GET /.well-known/jwks.json` - JSON Web Key Set for JWT verification
   - `GET /oauth/login/{provider}` - Initiate OAuth flow
   - `GET /oauth/callback/{provider}` - OAuth callback handler
   - `POST /oauth/callback/{provider}` - OAuth callback handler (for Apple form POST)
   - `GET /` - Root handler (serves login page)
-- All routes wrapped with rate limiting middleware
+  - `GET /healthz`, `GET /metrics` (if enabled)
+- Public routes wrapped with rate limiting middleware
 - Host-aware: uses `Host` header to determine which config/keys to use
+
+**Admin Listener** ([internal/server/admin_server.go](internal/server/admin_server.go))
+- Optional second `http.Server` bound to a separate port (`admin.port`), enabled via `admin.enabled: true`
+- Route: `POST /admin/login-assets/{host}` — accepts a ZIP body, atomically swaps the host's login directory
+- Not host-aware: the target host comes from the URL path, not the `Host` header
+- No authentication: access control is K8s RBAC (port-forward/exec) — the Helm chart exposes this via a ClusterIP Service with no Ingress
+- Shares the process-wide Prometheus registry, so requests show up on the public `/metrics` endpoint alongside OAuth traffic
+- `NewAdminServer(cfg, loginDirs)` is a plain package-level function — it does not share state with the main `Server` struct beyond the `host → login_dir` map passed in
 
 **OAuth System** ([internal/oauth/provider.go](internal/oauth/provider.go))
 - Provider interface defines: `GetAuthURL()` (returns auth URL + optional PKCE code verifier), `ExchangeCode()` (accepts optional code verifier), `GetUser()`, `Name()`
@@ -128,6 +137,15 @@ Lana is a production-ready OAuth SSO authentication server written in Go. It pro
 6. JWT `sub` claim is `hex(sha256(provider:provider_id))` for a stable, provider-agnostic identity
 7. JWT includes: `iss`, `aud`, `sub`, `provider`, `provider_id`, `exp`, `iat`, and optionally `email` and `name`
 8. Public keys exposed at `/.well-known/jwks.json` for verification by downstream services
+
+### Login Asset Upload Flow
+
+1. Operator sends `POST /admin/login-assets/{host}` to the admin port with a ZIP body
+2. Handler ([internal/server/handler_admin_upload.go](internal/server/handler_admin_upload.go)) validates `{host}` is a known host (via the `login_dir` map closed over at construction time — see [internal/server/admin_server.go](internal/server/admin_server.go))
+3. ZIP body streamed to a sibling temp file on the same filesystem as the host's `login_dir`
+4. ZIP extracted via [internal/admin/extractor.go](internal/admin/extractor.go) into a sibling temp directory (ZipSlip-safe: rejects `..`, absolute paths, and symlink entries)
+5. `os.RemoveAll(login_dir)` then `os.Rename(tmpDir, login_dir)` — atomic since both live on the same PVC
+6. Root handler ([internal/server/handler_root.go](internal/server/handler_root.go)) re-reads files per request, so new content is live immediately with no reload
 
 ### Important Implementation Details
 

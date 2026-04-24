@@ -46,7 +46,7 @@ func healthCheckHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, "OK")
 }
 
-func WaitForShutdown(server *http.Server) {
+func WaitForShutdown(servers ...*http.Server) {
 	<-rootCtx.Done()
 	rootCancel()
 	isShuttingDown.Store(true)
@@ -68,17 +68,20 @@ func WaitForShutdown(server *http.Server) {
 	)
 	defer cancel()
 
-	err := server.Shutdown(shutdownCtx)
-	if err != nil {
-		slog.Error(
-			"server shutdown encountered an error",
-			"error",
-			err,
-			"timeout",
-			shutdownPeriod,
-		)
-	} else {
-		slog.Info("server shutdown completed successfully")
+	for _, server := range servers {
+		if server == nil {
+			continue
+		}
+		if err := server.Shutdown(shutdownCtx); err != nil {
+			slog.Error(
+				"server shutdown encountered an error",
+				"addr", server.Addr,
+				"error", err,
+				"timeout", shutdownPeriod,
+			)
+		} else {
+			slog.Info("server shutdown completed successfully", "addr", server.Addr)
+		}
 	}
 
 	// Phase 3: Cancel ongoing operations context

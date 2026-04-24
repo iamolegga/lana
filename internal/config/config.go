@@ -72,6 +72,10 @@ type Config struct {
 		GoMetrics bool   `yaml:"go_metrics"`
 		Path      string `yaml:"path"`
 	} `yaml:"metrics"`
+	Admin struct {
+		Enabled bool `yaml:"enabled"`
+		Port    int  `yaml:"port" validate:"required_if=Enabled true,omitempty,min=1,max=65535"`
+	} `yaml:"admin"`
 	Hosts map[string]HostConfig `yaml:"hosts"     validate:"required,dive,keys,required,endkeys,required"`
 }
 

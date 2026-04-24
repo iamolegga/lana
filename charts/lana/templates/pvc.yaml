@@ -1,0 +1,24 @@
+{{- if and .Values.config.admin .Values.config.admin.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "lana.fullname" . }}-login-assets
+  namespace: {{ .Release.Namespace | quote }}
+  labels: {{- include "lana.labels" . | nindent 4 }}
+  {{- with .Values.commonAnnotations }}
+  annotations: {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  accessModes:
+    - {{ .Values.loginAssets.accessMode | quote }}
+  resources:
+    requests:
+      storage: {{ .Values.loginAssets.size | quote }}
+  {{- $storageClass := .Values.loginAssets.storageClass -}}
+  {{- if and .Values.global .Values.global.storageClass }}
+    {{- $storageClass = .Values.global.storageClass -}}
+  {{- end }}
+  {{- if $storageClass }}
+  storageClassName: {{ $storageClass | quote }}
+  {{- end }}
+{{- end }}

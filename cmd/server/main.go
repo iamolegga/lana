@@ -11,9 +11,9 @@ import (
 	"github.com/iamolegga/lana/internal/logging"
 	"github.com/iamolegga/lana/internal/metrics"
 	"github.com/iamolegga/lana/internal/oauth"
+	"github.com/iamolegga/lana/internal/providers/apple"
 	"github.com/iamolegga/lana/internal/providers/facebook"
 	"github.com/iamolegga/lana/internal/providers/google"
-	"github.com/iamolegga/lana/internal/providers/apple"
 	xprovider "github.com/iamolegga/lana/internal/providers/x"
 	"github.com/iamolegga/lana/internal/ratelimit"
 	"github.com/iamolegga/lana/internal/server"
@@ -80,6 +80,16 @@ func main() {
 		}
 	}()
 
+	adminHTTP := server.NewAdminServer(cfg, srv.LoginDirs())
+	if adminHTTP != nil {
+		go func() {
+			if err := server.StartAdmin(adminHTTP); err != nil && err != http.ErrServerClosed {
+				slog.Error("admin server failed", "error", err)
+				os.Exit(1)
+			}
+		}()
+	}
+
 	slog.Info("server started successfully", "port", cfg.Server.Port)
-	server.WaitForShutdown(srv.GetHTTPServer())
+	server.WaitForShutdown(srv.GetHTTPServer(), adminHTTP)
 }

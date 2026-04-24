@@ -49,7 +49,8 @@ helm delete my-lana
 This chart follows a simple philosophy:
 - **`config`** = Lana's `config.yaml` structure (as YAML)
 - **`secrets`** = Environment variables (free-form key-value pairs)
-- **Files** (certs, login pages) = User-provided volumes
+- **Certs** = User-provided volumes (PVC, Secret, etc.)
+- **Login pages** = Either user-provided volumes, or uploaded at runtime via the optional admin endpoint (`config.admin.enabled=true`, see "Uploading Login Assets via the Admin Endpoint" below)
 
 ### The Four Configuration Patterns
 
@@ -273,6 +274,86 @@ secrets:
   FACEBOOK_CLIENT_SECRET_STAGING: "xxx"
 ```
 
+### Uploading Login Assets via the Admin Endpoint
+
+For per-host login HTML/CSS/JS too large to fit in a ConfigMap (1 MiB limit) and too tedious to bake into the image on every change, the chart can provision a writable PVC and a separate admin HTTP listener that accepts ZIP uploads. The admin listener is exposed as a **ClusterIP Service with no Ingress** — it's only reachable via `kubectl port-forward`, an in-cluster Job, or a cluster-internal CI runner.
+
+Enable it in values:
+
+```yaml
+config:
+  cookie:
+    secret: $COOKIE_SECRET
+  admin:
+    enabled: true
+    port: 8081
+  hosts:
+    auth.example.com:
+      # NOTE: do not set login_dir here. The chart computes it from the host name
+      # (auth.example.com -> /var/lana/login/auth-example-com/) and will fail
+      # `helm install/upgrade` if you set login_dir explicitly.
+      allowed_redirect_urls:
+        - "https://*.example.com/*"
+      jwt:
+        private_key_file: /mnt/lana/certs/private.pem
+        kid: "auth-example-prod"
+        audience: "https://auth.example.com"
+        expiry: "24h"
+      providers:
+        google:
+          client_id: $GOOGLE_CLIENT_ID
+          client_secret: $GOOGLE_CLIENT_SECRET
+
+loginAssets:
+  mountPath: /var/lana/login
+  storageClass: ""        # use cluster default
+  size: 1Gi
+  accessMode: ReadWriteOnce  # switch to ReadWriteMany if replicaCount > 1
+```
+
+When enabled, the chart renders:
+
+- A **PVC** (`<release>-lana-login-assets`) mounted at `loginAssets.mountPath`.
+- A second **Service** (`<release>-lana-admin`) exposing `config.admin.port` — no Ingress is created; expose it yourself only if you need external access.
+- A **busybox init container** that `mkdir -p`s each host's login directory on the PVC before the main container starts.
+- An additional **`containerPort`** on the main container for the admin listener.
+- **`readOnlyRootFilesystem: true`** on the main container (the PVC is the only writable mount).
+
+The chart computes `login_dir` for each host using the rule `lower | replace "." "-" | replace ":" "-"`:
+
+| Host name | Resulting `login_dir` |
+|-----------|-----------------------|
+| `auth.example.com` | `/var/lana/login/auth-example-com/` |
+| `auth.example.com:8443` | `/var/lana/login/auth-example-com-8443/` |
+
+#### Uploading a host's assets
+
+There is no authentication on the admin endpoint — access control relies on Kubernetes RBAC (whoever has `port-forward`/`exec` on the namespace can upload, which is the same set of people who can overwrite files on the PVC directly). The threat model assumes a trusted single-tenant cluster.
+
+```bash
+# Port-forward from the admin Service
+kubectl port-forward svc/my-lana-admin 8081:8081 &
+
+# Pack the login directory into a ZIP
+(cd ./login && zip -r /tmp/login.zip .)
+
+# Upload — the {host} path segment must match a configured host name
+curl -X POST \
+  -H "Content-Type: application/zip" \
+  --data-binary @/tmp/login.zip \
+  http://localhost:8081/admin/login-assets/auth.example.com
+# => {"status":"ok"}
+```
+
+The new content is served from `/` on the public port immediately — no restart required.
+
+**Safety:**
+- ZIP entries with `..`, absolute paths, or symlink mode bits are rejected (`400 Bad Request`).
+- Uploads for hosts not in `config.hosts` are rejected (`404 Not Found`).
+- Extraction uses a sibling temp directory on the PVC, then `os.RemoveAll` + `os.Rename` for an atomic swap.
+
+Upload activity is captured by the existing Prometheus middleware, so `http_requests_total` and `http_request_duration_seconds` labeled with `path=/admin/login-assets/<host>` show up on the public `/metrics` endpoint alongside OAuth traffic.
+
 ### Providing Files (Certs and Login Pages)
 
 Lana requires file-based resources. Provide them via `extraVolumes`:
@@ -413,6 +494,17 @@ openssl rsa -in private.pem -pubout -out public.pem
 | --------------------- | ------------------------ | ----------- |
 | `service.type`        | Lana service type        | `ClusterIP` |
 | `service.ports.http`  | Lana service HTTP port   | `8080`      |
+
+### Login Assets Parameters
+
+Used only when `config.admin.enabled=true`. See "Uploading Login Assets via the Admin Endpoint" above.
+
+| Name                       | Description                                                       | Value              |
+| -------------------------- | ----------------------------------------------------------------- | ------------------ |
+| `loginAssets.mountPath`    | Where the assets PVC is mounted inside the pod                    | `/var/lana/login`  |
+| `loginAssets.storageClass` | StorageClass for the PVC (empty = cluster default)                | `""`               |
+| `loginAssets.size`         | PVC size                                                          | `1Gi`              |
+| `loginAssets.accessMode`   | PVC access mode (use `ReadWriteMany` for `replicaCount > 1`)      | `ReadWriteOnce`    |
 
 ### Ingress Parameters
 

@@ -37,14 +37,14 @@ func encryptState(key []byte, state, redirect, codeVerifier string) (string, err
 		Redirect:     redirect,
 		CodeVerifier: codeVerifier,
 	}
-	
+
 	plaintext, err := json.Marshal(data)
 	if err != nil {
 		return "", fmt.Errorf("could not marshal state data: %w", err)
 	}
 
 	ciphertext := aesGCM.Seal(nonce, nonce, plaintext, nil)
-	
+
 	return base64.RawURLEncoding.EncodeToString(ciphertext), nil
 }
 
