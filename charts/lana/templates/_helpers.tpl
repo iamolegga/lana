@@ -139,10 +139,13 @@ Return the configmap name for Lana configuration
 {{- end }}
 
 {{/*
-Return true if a configmap should be created
+Return true if a configmap should be created. Always true unless the user
+brings their own ConfigMap via `existingConfig.name` — the chart injects
+observability settings into the rendered config, so the ConfigMap must
+render even when the user leaves `.Values.config` empty.
 */}}
 {{- define "lana.createConfigMap" -}}
-{{- if and (not .Values.existingConfig.name) .Values.config }}
+{{- if not .Values.existingConfig.name }}
 {{- true }}
 {{- end }}
 {{- end }}

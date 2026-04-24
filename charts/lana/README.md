@@ -352,7 +352,7 @@ The new content is served from `/` on the public port immediately — no restart
 - Uploads for hosts not in `config.hosts` are rejected (`404 Not Found`).
 - Extraction uses a sibling temp directory on the PVC, then `os.RemoveAll` + `os.Rename` for an atomic swap.
 
-Upload activity is captured by the existing Prometheus middleware, so `http_requests_total` and `http_request_duration_seconds` labeled with `path=/admin/login-assets/<host>` show up on the public `/metrics` endpoint alongside OAuth traffic.
+Upload activity is captured by the Prometheus middleware, so `lana_http_requests_total` and `lana_http_request_duration_seconds` labeled with `path=/admin/login-assets/<host>` show up on the observability listener's `/metrics` endpoint alongside OAuth traffic.
 
 ### Providing Files (Certs and Login Pages)
 

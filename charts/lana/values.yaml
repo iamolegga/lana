@@ -274,13 +274,13 @@ args: []
 ##
 extraEnvVars: []
 
-## @param extraEnvVarsCM Name of existing ConfigMap containing extra env vars for Lana nodes
+## @param extraEnvVarsCMs Names of existing ConfigMaps containing extra env vars for Lana nodes
 ##
-extraEnvVarsCM: ""
+extraEnvVarsCMs: []
 
-## @param extraEnvVarsSecret Name of existing Secret containing extra env vars for Lana nodes
+## @param extraEnvVarsSecrets Names of existing Secrets containing extra env vars for Lana nodes
 ##
-extraEnvVarsSecret: ""
+extraEnvVarsSecrets: []
 
 ## @section Login Assets Admin Upload
 
@@ -310,6 +310,25 @@ loginAssets:
   storageClass: ""
   size: 1Gi
   accessMode: ReadWriteOnce
+
+## @section Observability
+
+## Observability listener — serves /healthz (always) and /metrics (when
+## `observability.metrics.enabled` is true) on a dedicated port that is NOT
+## exposed via the public Ingress. The chart injects the observability block
+## into the rendered config.yaml so the app and the chart (containerPort,
+## Service port, ServiceMonitor) agree on a single source of truth. Setting
+## `config.observability` explicitly is rejected — the chart owns it.
+##
+## @param observability.port Port for the observability listener (/healthz, /metrics)
+## @param observability.metrics.enabled Register Prometheus collectors and expose /metrics
+## @param observability.metrics.goMetrics Include Go runtime collectors when metrics are enabled
+##
+observability:
+  port: 9090
+  metrics:
+    enabled: false
+    goMetrics: false
 
 ## @section Traffic Exposure Parameters
 

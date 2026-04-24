@@ -116,7 +116,7 @@ spec:
           env:
             {{- toYaml .Values.extraEnvVars | nindent 12 }}
           {{- end }}
-          {{- if or .Values.existingSecret.name .Values.secrets .Values.extraEnvVarsCM .Values.extraEnvVarsSecret }}
+          {{- if or .Values.existingSecret.name .Values.secrets .Values.extraEnvVarsCMs .Values.extraEnvVarsSecrets }}
           envFrom:
             {{- if .Values.existingSecret.name }}
             - secretRef:
@@ -126,18 +126,21 @@ spec:
             - secretRef:
                 name: {{ include "lana.fullname" . }}
             {{- end }}
-            {{- if .Values.extraEnvVarsCM }}
+            {{- range .Values.extraEnvVarsCMs }}
             - configMapRef:
-                name: {{ .Values.extraEnvVarsCM }}
+                name: {{ . }}
             {{- end }}
-            {{- if .Values.extraEnvVarsSecret }}
+            {{- range .Values.extraEnvVarsSecrets }}
             - secretRef:
-                name: {{ .Values.extraEnvVarsSecret }}
+                name: {{ . }}
             {{- end }}
           {{- end }}
           ports:
             - name: http
               containerPort: {{ .Values.service.ports.http }}
+              protocol: TCP
+            - name: observability
+              containerPort: {{ .Values.observability.port }}
               protocol: TCP
             {{- if and .Values.config.admin .Values.config.admin.enabled }}
             - name: admin
@@ -148,7 +151,7 @@ spec:
           livenessProbe:
             httpGet:
               path: /healthz
-              port: http
+              port: observability
             initialDelaySeconds: {{ .Values.livenessProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.livenessProbe.periodSeconds }}
             timeoutSeconds: {{ .Values.livenessProbe.timeoutSeconds }}
@@ -161,7 +164,7 @@ spec:
           readinessProbe:
             httpGet:
               path: /healthz
-              port: http
+              port: observability
             initialDelaySeconds: {{ .Values.readinessProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.readinessProbe.periodSeconds }}
             timeoutSeconds: {{ .Values.readinessProbe.timeoutSeconds }}
@@ -174,7 +177,7 @@ spec:
           startupProbe:
             httpGet:
               path: /healthz
-              port: http
+              port: observability
             initialDelaySeconds: {{ .Values.startupProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.startupProbe.periodSeconds }}
             timeoutSeconds: {{ .Values.startupProbe.timeoutSeconds }}
