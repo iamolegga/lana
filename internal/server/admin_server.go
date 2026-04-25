@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/iamolegga/lana/internal/config"
@@ -34,7 +35,7 @@ func NewAdminServer(cfg config.Config, loginDirs map[string]string) *http.Server
 
 	var handler http.Handler = mux
 	handler = logging.Middleware(handler)
-	handler = metricsMiddleware(handler)
+	handler = metricsMiddleware(handler, classifyAdminPath)
 
 	addr := fmt.Sprintf(":%d", cfg.Admin.Port)
 	return &http.Server{
@@ -47,6 +48,16 @@ func NewAdminServer(cfg config.Config, loginDirs map[string]string) *http.Server
 			return GetServerBaseContext()
 		},
 	}
+}
+
+// classifyAdminPath maps a request on the admin listener to a bounded
+// `path` label value. The only registered route is the login-asset upload;
+// anything else is bucketed as "unknown" to keep label cardinality bounded.
+func classifyAdminPath(r *http.Request) string {
+	if strings.HasPrefix(r.URL.Path, "/admin/login-assets/") {
+		return r.URL.Path
+	}
+	return "unknown"
 }
 
 // StartAdmin blocks on ListenAndServe for the given admin server. Returns

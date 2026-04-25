@@ -2,39 +2,38 @@ package server
 
 import (
 	"net/http"
-	"slices"
 	"strconv"
 	"time"
 
 	"github.com/iamolegga/lana/internal/metrics"
 )
 
-// metricsMiddleware wraps an HTTP handler to collect metrics
-func metricsMiddleware(next http.Handler, ignorePaths ...string) http.Handler {
+// metricsMiddleware wraps an HTTP handler to collect metrics. The classify
+// function maps a request to the `path` label value, allowing callers to
+// bucket unbounded paths (e.g. static-file requests) into a fixed set.
+func metricsMiddleware(next http.Handler, classify func(*http.Request) string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !metrics.Enabled() || slices.Contains(ignorePaths, r.URL.Path) {
+		if !metrics.Enabled() {
 			next.ServeHTTP(w, r)
 			return
 		}
 
 		start := time.Now()
 
-		// Create a response writer wrapper to capture status code
 		wrapped := &responseWriter{
 			ResponseWriter: w,
-			statusCode:     http.StatusOK, // Default to 200
+			statusCode:     http.StatusOK,
 		}
 
-		// Call the next handler
 		next.ServeHTTP(wrapped, r)
 
-		// Record metrics
 		duration := time.Since(start).Seconds()
 		statusCode := strconv.Itoa(wrapped.statusCode)
 		host := r.Host
+		path := classify(r)
 
-		metrics.RecordHTTPRequest(r.Method, r.URL.Path, statusCode, host)
-		metrics.RecordHTTPDuration(r.Method, r.URL.Path, host, duration)
+		metrics.RecordHTTPRequest(r.Method, path, statusCode, host)
+		metrics.RecordHTTPDuration(r.Method, path, host, duration)
 	})
 }
 

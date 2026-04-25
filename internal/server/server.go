@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net"
+	"strings"
 
 	"net/http"
 
@@ -190,7 +191,25 @@ func (s *Server) setupRoutes() http.Handler {
 
 	// Apply middleware in reverse order (last applied is executed first)
 	handler := logging.Middleware(mux)
-	handler = metricsMiddleware(handler)
+	handler = metricsMiddleware(handler, classifyPublicPath)
 
 	return handler
+}
+
+// classifyPublicPath maps a request on the public listener to a bounded
+// `path` label value. Registered routes pass through; everything else
+// (the GET / catch-all serving static login assets, plus typos and scans)
+// is bucketed as "static" — except the literal "/" landing-page request,
+// which is kept distinguishable.
+func classifyPublicPath(r *http.Request) string {
+	p := r.URL.Path
+	switch {
+	case p == "/",
+		p == "/.well-known/jwks.json",
+		strings.HasPrefix(p, "/oauth/login/"),
+		strings.HasPrefix(p, "/oauth/callback/"):
+		return p
+	default:
+		return "static"
+	}
 }
