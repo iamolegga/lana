@@ -6,7 +6,7 @@
 <p align="center"><b>L</b>ightweight <b>A</b>uthe<b>N</b>tication <b>A</b>pp</p>
 <p align="center">A single OAuth 2.0 SSO server to simplify authentication for multiple applications.</p>
 
-Lana provides OAuth 2.0 authentication through multiple providers (Google, Facebook, X, Apple, and more to come) and issues JWTs for authenticated users. The server supports multi-host configurations with host-specific JWT signing keys and provider settings, making it ideal for managing authentication across multiple applications from a single deployment.
+Lana provides OAuth 2.0 authentication through multiple providers (Google, Facebook, X, Apple, Microsoft, and more to come) and issues JWTs for authenticated users. The server supports multi-host configurations with host-specific JWT signing keys and provider settings, making it ideal for managing authentication across multiple applications from a single deployment.
 
 ## Authentication Flow
 
@@ -58,9 +58,10 @@ Lana is built with security as a top priority:
 
 - **RSA-256 JWT Signing** - Industry-standard asymmetric signing using PKCS#1 PEM format
 - **AES-GCM Cookie Encryption** - State cookies encrypted with AES-256-GCM for CSRF protection
-- **OIDC Support** - Full OpenID Connect implementation for Google and Apple OAuth with ID token verification
-- **PKCE Support** - Proof Key for Code Exchange (RFC 7636) for providers that require it (X/Twitter)
-- **Provider-Agnostic Identity** - Stable `sub` claim derived from `sha256(provider:id)`, with optional `email` and `name` claims when available from the provider
+- **OIDC Support** - Full OpenID Connect implementation for Google, Apple and Microsoft with ID token verification
+- **PKCE Support** - Proof Key for Code Exchange (RFC 7636) for X/Twitter and Microsoft
+- **Provider-Agnostic Identity** - Stable `sub` claim derived from `sha256(provider:id)`, with optional `email` and `name` claims when available from the provider, plus `tid` (the Microsoft Entra tenant) for Microsoft accounts
+- **Verified Emails Only** - `email` is omitted unless the provider vouches for it (Google `email_verified`; Microsoft `xms_edov`, or a personal Microsoft account)
 - **Secure Cookie Flags** - HttpOnly, Secure, and SameSite flags prevent cookie theft and CSRF
 - **Rate Limiting** - Token bucket algorithm prevents brute force and DoS attacks
 - **Proxy-Aware IP Detection** - Supports X-Forwarded-For, CF-Connecting-IP, and X-Real-IP headers with priority-based detection
@@ -167,6 +168,12 @@ hosts:
         team_id: $EXAMPLE_APPLE_TEAM_ID
         key_id: $EXAMPLE_APPLE_KEY_ID
         private_key_file: "./keys/apple-example.p8"
+      microsoft:
+        # Multi-tenant app registration ("any organizational directory and
+        # personal Microsoft accounts"). Add optional ID-token claims
+        # `email` and `xms_edov`, otherwise no email is passed through.
+        client_id: $EXAMPLE_MICROSOFT_CLIENT_ID
+        client_secret: $EXAMPLE_MICROSOFT_CLIENT_SECRET
 
   auth.anotherapp.com:
     login_dir: ./web/anotherapp/
@@ -236,6 +243,12 @@ To integrate Lana with your application:
    ```
    https://yourapp.com/callback?token=<jwt>
    ```
+   If the sign-in fails after Lana has validated the state, the callback receives `?error=<code>` instead:
+   - `access_denied` - the user cancelled or declined
+   - `consent_required` - the user's Microsoft Entra organisation must approve the app first
+   - `provider_error` - anything else (provider error, code exchange or ID token verification failed)
+
+   Failures before that point (missing or tampered state cookie) are answered with a plain-text 400, because the redirect URL is not known yet.
 
 3. **Verify the JWT** using the public key from `/.well-known/jwks.json`
 

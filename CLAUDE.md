@@ -11,7 +11,7 @@ tools to resolve library id and get library docs without me having to explicitly
 
 ## Project Overview
 
-Lana is a production-ready OAuth SSO authentication server written in Go. It provides OAuth 2.0 authentication through multiple providers (Google, Facebook, X, Apple) and issues JWTs for authenticated users. The server supports multi-host configurations with host-specific JWT signing keys and provider settings.
+Lana is a production-ready OAuth SSO authentication server written in Go. It provides OAuth 2.0 authentication through multiple providers (Google, Facebook, X, Apple, Microsoft) and issues JWTs for authenticated users. The server supports multi-host configurations with host-specific JWT signing keys and provider settings.
 
 ## Development Commands
 

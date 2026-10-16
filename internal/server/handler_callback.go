@@ -70,19 +70,25 @@ func (s *Server) handlerCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// From here on the redirect URL is known and trusted (it came out of the
+	// encrypted state cookie and was matched against the allow-list at
+	// login), so failures go back to the app as ?error=<code> and the app
+	// renders its own page instead of the user hitting a plain-text error.
 	if errorMsg := r.FormValue("error"); errorMsg != "" {
+		description := r.FormValue("error_description")
 		slog.Debug("OAuth error response",
 			"error", errorMsg,
-			"description", r.FormValue("error_description"),
+			"description", description,
 		)
-		metrics.RecordAuthentication(providerName, r.Host, "failure", "user_denied")
-		http.Error(w, "Authentication failed: "+errorMsg, http.StatusBadRequest)
+		code := classifyProviderError(errorMsg, description)
+		metrics.RecordAuthentication(providerName, r.Host, "failure", code)
+		s.redirectWithError(w, r, redirectURL, code)
 		return
 	}
 
 	code := r.FormValue("code")
 	if code == "" {
-		http.Error(w, "Missing code parameter", http.StatusBadRequest)
+		s.redirectWithError(w, r, redirectURL, ErrCodeProviderError)
 		return
 	}
 
@@ -101,11 +107,7 @@ func (s *Server) handlerCallback(w http.ResponseWriter, r *http.Request) {
 			"failure",
 			"provider_error",
 		)
-		http.Error(
-			w,
-			"Failed to exchange authorization code",
-			http.StatusBadRequest,
-		)
+		s.redirectWithError(w, r, redirectURL, ErrCodeProviderError)
 		return
 	}
 
@@ -122,7 +124,7 @@ func (s *Server) handlerCallback(w http.ResponseWriter, r *http.Request) {
 			"failure",
 			"provider_error",
 		)
-		http.Error(w, "Failed to get user information", http.StatusUnauthorized)
+		s.redirectWithError(w, r, redirectURL, ErrCodeProviderError)
 		return
 	}
 
@@ -133,7 +135,7 @@ func (s *Server) handlerCallback(w http.ResponseWriter, r *http.Request) {
 			"failure",
 			"id_missing",
 		)
-		http.Error(w, "User ID not available", http.StatusUnauthorized)
+		s.redirectWithError(w, r, redirectURL, ErrCodeProviderError)
 		return
 	}
 
@@ -155,6 +157,9 @@ func (s *Server) handlerCallback(w http.ResponseWriter, r *http.Request) {
 	}
 	if user.Name != "" {
 		jwtClaims["name"] = user.Name
+	}
+	if user.TenantID != "" {
+		jwtClaims["tid"] = user.TenantID
 	}
 
 	appToken := jwt.NewWithClaims(jwt.SigningMethodRS256, jwtClaims)

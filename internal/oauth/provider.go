@@ -13,6 +13,9 @@ type User struct {
 	Email string
 	Name  string
 	ID    string
+	// TenantID is the organisation the account belongs to, for providers
+	// that have one (Microsoft Entra). Empty otherwise.
+	TenantID string
 }
 
 type TokenResponse struct {
