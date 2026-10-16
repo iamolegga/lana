@@ -14,6 +14,7 @@ import (
 	"github.com/iamolegga/lana/internal/providers/apple"
 	"github.com/iamolegga/lana/internal/providers/facebook"
 	"github.com/iamolegga/lana/internal/providers/google"
+	"github.com/iamolegga/lana/internal/providers/microsoft"
 	xprovider "github.com/iamolegga/lana/internal/providers/x"
 	"github.com/iamolegga/lana/internal/ratelimit"
 	"github.com/iamolegga/lana/internal/server"
@@ -59,6 +60,7 @@ func main() {
 	registry.Register("facebook", facebook.New)
 	registry.Register("x", xprovider.New)
 	registry.Register("apple", apple.New)
+	registry.Register("microsoft", microsoft.New)
 
 	srv, err := server.New(server.Config{
 		Config:      cfg,
